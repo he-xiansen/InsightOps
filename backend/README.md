@@ -18,6 +18,27 @@ cd /opt/trae/InsightOps/backend
 .venv/bin/pytest tests/test_health.py -v
 ```
 
+## 最小运行
+
+启动服务：
+
+```bash
+cd /opt/trae/InsightOps/backend
+uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+Smoke test：
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+预期返回：
+
+```json
+{"status":"ok"}
+```
+
 ## 红绿灯记录
 
 - 红灯：在未安装 `fastapi` 的情况下运行 `cd /opt/trae/InsightOps/backend && pytest tests/test_health.py -v`，测试收集失败，错误为 `ModuleNotFoundError: No module named 'fastapi'`
