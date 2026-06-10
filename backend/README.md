@@ -7,7 +7,15 @@
 ```bash
 conda env create -f environment.yml
 conda activate insightops
+cd /opt/trae/InsightOps/backend
 pytest tests/test_health.py -v
+```
+
+## 当前验证
+
+```bash
+cd /opt/trae/InsightOps/backend
+.venv/bin/pytest tests/test_health.py -v
 ```
 
 ## 入口
