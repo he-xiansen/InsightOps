@@ -1,0 +1,20 @@
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.core.database import get_session
+from app.core.security import require_api_key
+from app.schemas.vm_asset import BulkUpsertVMAssetsRequest, BulkUpsertVMAssetsResponse
+from app.services.vm_asset_service import VMAssetService
+
+
+router = APIRouter(prefix="/api/assets", tags=["assets"])
+
+
+@router.post("/bulk-upsert", response_model=BulkUpsertVMAssetsResponse)
+def bulk_upsert_assets(
+    payload: BulkUpsertVMAssetsRequest,
+    session: Session = Depends(get_session),
+    _=Depends(require_api_key),
+) -> BulkUpsertVMAssetsResponse:
+    service = VMAssetService(session)
+    return service.bulk_upsert(payload)

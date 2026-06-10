@@ -1,7 +1,12 @@
 from fastapi import FastAPI
 
+from app.api.routes.assets import router as asset_router
+from app.api.routes.sync import router as sync_router
+
 
 app = FastAPI(title="InsightOps API", version="0.1.0")
+app.include_router(asset_router)
+app.include_router(sync_router)
 
 
 @app.get("/health")
