@@ -21,9 +21,54 @@ def test_vm_asset_uses_ip_as_unique_identity() -> None:
 
 
 def test_models_expose_minimum_planned_columns() -> None:
-    assert {"ip", "last_rdp_login_at", "last_seen_at"}.issubset(VMAsset.__table__.columns.keys())
-    assert {"ip", "login_at", "raw_event_hash", "logon_type"}.issubset(VMRdpLogin.__table__.columns.keys())
-    assert {"snapshot_date", "ip", "idle_days", "recycle_level"}.issubset(IdleVMSnapshot.__table__.columns.keys())
-    assert {"ip", "zabbix_hostid", "host_name", "available"}.issubset(ZabbixHostMapping.__table__.columns.keys())
-    assert {"job_type", "started_at", "finished_at", "status"}.issubset(SyncJob.__table__.columns.keys())
-    assert {"key_name", "key_hash", "enabled", "expires_at"}.issubset(APIKey.__table__.columns.keys())
+    assert set(VMAsset.__table__.columns.keys()) == {
+        "ip",
+        "hostname",
+        "department",
+        "lab",
+        "owner",
+        "os_type",
+        "status",
+        "last_rdp_login_at",
+        "last_seen_at",
+    }
+    assert set(VMRdpLogin.__table__.columns.keys()) == {
+        "id",
+        "ip",
+        "login_at",
+        "username",
+        "raw_event_hash",
+    }
+    assert set(IdleVMSnapshot.__table__.columns.keys()) == {
+        "snapshot_date",
+        "ip",
+        "idle_days",
+        "owner",
+        "department",
+        "lab",
+        "recycle_level",
+        "reason",
+        "last_rdp_login_at",
+    }
+    assert set(ZabbixHostMapping.__table__.columns.keys()) == {
+        "ip",
+        "zabbix_hostid",
+        "host_name",
+        "available",
+        "last_sync_at",
+    }
+    assert set(SyncJob.__table__.columns.keys()) == {
+        "job_type",
+        "started_at",
+        "finished_at",
+        "status",
+        "processed_count",
+        "error_message",
+    }
+    assert set(APIKey.__table__.columns.keys()) == {
+        "key_name",
+        "key_hash",
+        "enabled",
+        "expires_at",
+        "last_used_at",
+    }
