@@ -11,11 +11,12 @@ cd /opt/trae/InsightOps/backend
 pytest tests/test_health.py -v
 ```
 
-## 当前验证
+如果使用标准安装方式，也可以在 `backend` 目录执行：
 
 ```bash
 cd /opt/trae/InsightOps/backend
-.venv/bin/pytest tests/test_health.py -v
+python -m pip install -e ".[test]"
+pytest tests/test_health.py -v
 ```
 
 ## 最小运行
@@ -37,6 +38,15 @@ curl http://127.0.0.1:8000/health
 
 ```json
 {"status":"ok"}
+```
+
+## 本地附注
+
+当前工作区也曾使用未纳管的 `.venv` 执行本地验证：
+
+```bash
+cd /opt/trae/InsightOps/backend
+.venv/bin/pytest tests/test_health.py -v
 ```
 
 ## 红绿灯记录
