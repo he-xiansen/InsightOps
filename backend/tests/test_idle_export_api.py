@@ -92,3 +92,57 @@ def test_idle_export_returns_csv_rows_for_snapshots(
         "10.0.0.10,alice,45,low\r\n"
         "10.0.0.11,bob,95,high\r\n"
     )
+
+
+def test_idle_export_only_returns_latest_snapshot_date_rows(
+    client: TestClient,
+    session_factory: sessionmaker[Session],
+) -> None:
+    with session_factory() as session:
+        session.add_all(
+            [
+                models.IdleVMSnapshot(
+                    snapshot_date=date(2026, 6, 10),
+                    ip="10.0.0.10",
+                    idle_days=44,
+                    owner="alice-old",
+                    department="platform",
+                    lab="lab-a",
+                    recycle_level="low",
+                    reason="连续 44 天未发生 RDP 登录",
+                    last_rdp_login_at=datetime(2026, 4, 28, 8, 0, tzinfo=UTC),
+                ),
+                models.IdleVMSnapshot(
+                    snapshot_date=date(2026, 6, 11),
+                    ip="10.0.0.10",
+                    idle_days=45,
+                    owner="alice",
+                    department="platform",
+                    lab="lab-a",
+                    recycle_level="low",
+                    reason="连续 45 天未发生 RDP 登录",
+                    last_rdp_login_at=datetime(2026, 4, 27, 8, 0, tzinfo=UTC),
+                ),
+                models.IdleVMSnapshot(
+                    snapshot_date=date(2026, 6, 11),
+                    ip="10.0.0.11",
+                    idle_days=95,
+                    owner="bob",
+                    department="ops",
+                    lab="lab-b",
+                    recycle_level="high",
+                    reason="连续 95 天未发生 RDP 登录",
+                    last_rdp_login_at=datetime(2026, 3, 8, 8, 0, tzinfo=UTC),
+                ),
+            ]
+        )
+        session.commit()
+
+    response = client.get("/api/v1/idle/export")
+
+    assert response.status_code == 200
+    assert response.text == (
+        "ip,owner,idle_days,recycle_level\r\n"
+        "10.0.0.10,alice,45,low\r\n"
+        "10.0.0.11,bob,95,high\r\n"
+    )

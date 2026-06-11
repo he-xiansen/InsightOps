@@ -1,7 +1,7 @@
 import csv
 from io import StringIO
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.idle_vm_snapshot import IdleVMSnapshot
@@ -12,8 +12,11 @@ class IdleExportService:
         self.session = session
 
     def export_csv(self) -> str:
+        latest_snapshot_date = self.session.scalar(select(func.max(IdleVMSnapshot.snapshot_date)))
         rows = self.session.scalars(
-            select(IdleVMSnapshot).order_by(IdleVMSnapshot.snapshot_date, IdleVMSnapshot.ip)
+            select(IdleVMSnapshot)
+            .where(IdleVMSnapshot.snapshot_date == latest_snapshot_date)
+            .order_by(IdleVMSnapshot.ip)
         ).all()
 
         buffer = StringIO()
