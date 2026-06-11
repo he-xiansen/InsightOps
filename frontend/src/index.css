@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    --background: 222.2 47.4% 4.2%;
+    --foreground: 210 40% 98%;
+    --card: 224 44% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 224 44% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 224.3 76.3% 48%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 24%;
+    --input: 217.2 32.6% 24%;
+    --ring: 224.3 76.3% 48%;
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    margin: 0;
+    background-image:
+      radial-gradient(circle at top, rgba(59, 130, 246, 0.22), transparent 34%),
+      linear-gradient(180deg, #09090b 0%, #111827 100%);
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+}
