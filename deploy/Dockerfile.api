@@ -14,7 +14,12 @@ RUN python -m pip install --upgrade pip && \
         pydantic-settings==2.5.2 \
         pymysql==1.1.1
 
+RUN useradd --create-home --uid 10001 insightops
+
 COPY backend/ ./
+RUN chown -R insightops:insightops /app/backend
+
+USER insightops
 
 EXPOSE 8000
 

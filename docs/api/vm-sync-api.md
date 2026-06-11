@@ -86,6 +86,8 @@
 
 ## 调用示例
 
+### curl
+
 ```bash
 curl -X POST 'http://127.0.0.1:8000/api/v1/sync/vm-assets' \
   -H 'Content-Type: application/json' \
@@ -102,6 +104,37 @@ curl -X POST 'http://127.0.0.1:8000/api/v1/sync/vm-assets' \
       }
     ]
   }'
+```
+
+### Python
+
+```python
+import requests
+
+payload = {
+    "items": [
+        {
+            "ip": "10.0.0.8",
+            "hostname": "sync-vm",
+            "department": "ops",
+            "owner": "alice",
+            "status": "active",
+            "last_seen_at": "2026-06-11T10:00:00Z",
+        }
+    ]
+}
+
+response = requests.post(
+    "http://127.0.0.1:8000/api/v1/sync/vm-assets",
+    headers={
+        "Content-Type": "application/json",
+        "X-API-Key": "replace-with-real-token",
+    },
+    json=payload,
+    timeout=30,
+)
+response.raise_for_status()
+print(response.json())
 ```
 
 ## 联调建议
