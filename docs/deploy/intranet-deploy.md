@@ -7,7 +7,7 @@
 - `insightops-mysql`：项目业务库，仅在容器内部网络可见。
 - `insightops-db-init`：一次性数据库初始化任务，用于空库建表。
 - `insightops-api`：FastAPI 接口服务。
-- `insightops-collector`：采集任务容器，默认以待命方式启动，便于后续手工触发同步任务。
+- `insightops-collector`：采集一次性任务容器，按需手工触发同步或分析任务。
 - `insightops-frontend`：前端静态页面与 API 反向代理入口。
 
 ## 前置条件
@@ -52,13 +52,14 @@ cp backend/.env.example backend/.env
 cd /opt/trae/InsightOps
 docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d insightops-mysql
 docker compose --env-file deploy/.env -f deploy/docker-compose.yml run --rm insightops-db-init
-docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d --build insightops-api insightops-collector insightops-frontend
+docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d --build insightops-api insightops-frontend
 ```
 
 说明：
 
 - `insightops-db-init` 会调用 SQLAlchemy 的 `create_all()`，为 `vm_assets`、`vm_rdp_logins`、`idle_vm_snapshots`、`zabbix_host_mapping`、`sync_jobs`、`api_keys` 等核心表建表。
-- 后续直接执行 `docker compose ... up -d --build` 时，`insightops-api` 与 `insightops-collector` 也会等待初始化任务完成后再启动。
+- `insightops-api` 会等待初始化任务完成后再启动。
+- `insightops-collector` 不会作为常驻服务自动拉起；需要执行采集任务时，请使用 `docker compose run --rm insightops-collector ...` 手工触发。
 
 ## API Key 初始化
 
@@ -107,7 +108,7 @@ docker compose --env-file deploy/.env -f deploy/docker-compose.yml exec insighto
 启动业务容器后，建议先验证到 Zabbix 数据源的网络与账号是否可用：
 
 ```bash
-docker compose --env-file deploy/.env -f deploy/docker-compose.yml exec insightops-collector \
+docker compose --env-file deploy/.env -f deploy/docker-compose.yml run --rm insightops-collector \
   sh -lc 'python - <<"PY"
 import os
 import pymysql
@@ -170,13 +171,20 @@ docker compose --env-file deploy/.env.example -f deploy/docker-compose.yml confi
 
 ## 采集容器使用方式
 
-`insightops-collector` 默认保持运行但不自动执行周期任务，适合一期环境下手工触发。可以在容器内执行临时脚本，例如：
+`insightops-collector` 默认入口是一次性任务执行器，启动后会运行一次采集任务并退出，因此在一期环境中应按需手工触发，而不是作为常驻服务保持运行。最简单的触发方式如下：
 
 ```bash
-docker compose --env-file deploy/.env -f deploy/docker-compose.yml exec insightops-collector python -c "print('collector ready')"
+docker compose --env-file deploy/.env -f deploy/docker-compose.yml run --rm insightops-collector
 ```
 
-后续若要接入定时任务，可在该容器中增加 cron、Celery beat 或独立任务入口，而无需调整 API 与前端部署方式。
+默认未显式传参时会执行 `idle_analysis`。如需切换任务，可在命令后追加任务名或参数，例如：
+
+```bash
+docker compose --env-file deploy/.env -f deploy/docker-compose.yml run --rm insightops-collector zabbix_host_sync
+docker compose --env-file deploy/.env -f deploy/docker-compose.yml run --rm insightops-collector idle_analysis --idle-days 45
+```
+
+后续若要接入定时任务，可在外部调度系统中周期性执行上述 `docker compose run --rm ...`，或再单独设计常驻调度入口，而无需调整 API 与前端部署方式。
 
 ## 升级步骤
 

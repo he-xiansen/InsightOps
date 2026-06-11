@@ -69,7 +69,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.collector
-    restart: unless-stopped
+    restart: "no"
     depends_on:
       insightops-mysql:
         condition: service_healthy
