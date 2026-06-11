@@ -70,7 +70,7 @@ def test_analyze_idle_assets_creates_snapshots_for_assets_over_default_threshold
                     owner="carol",
                     department="ops",
                     lab="lab-c",
-                    last_seen_at=as_of - timedelta(days=90),
+                    last_seen_at=as_of - timedelta(hours=1),
                 ),
             ]
         )
@@ -90,7 +90,7 @@ def test_analyze_idle_assets_creates_snapshots_for_assets_over_default_threshold
 
     assert [(snapshot.ip, snapshot.idle_days, snapshot.recycle_level) for snapshot in snapshots] == [
         ("10.0.0.10", 45, "low"),
-        ("10.0.0.12", 90, "high"),
+        ("10.0.0.12", 30, "low"),
     ]
     assert snapshots[0].snapshot_date == date(2026, 6, 11)
     assert snapshots[0].reason == "连续 45 天未发生 RDP 登录"
@@ -133,3 +133,54 @@ def test_run_idle_analysis_replaces_same_day_snapshots(session_factory: sessionm
     assert snapshots[0].ip == "10.0.0.20"
     assert snapshots[0].idle_days == 70
     assert len(jobs) == 2
+
+
+def test_run_idle_analysis_keeps_never_logged_in_asset_idle_when_last_seen_refreshes(
+    session_factory: sessionmaker[Session],
+) -> None:
+    first_snapshot_date = date(2026, 6, 10)
+    as_of = datetime(2026, 6, 11, 10, 0, tzinfo=UTC)
+
+    with session_factory() as session:
+        session.add(
+            models.VMAsset(
+                ip="10.0.0.30",
+                hostname="vm-30",
+                owner="erin",
+                department="ops",
+                lab="lab-e",
+                last_seen_at=as_of - timedelta(minutes=5),
+            )
+        )
+        session.add(
+            models.IdleVMSnapshot(
+                snapshot_date=first_snapshot_date,
+                ip="10.0.0.30",
+                idle_days=44,
+                owner="erin",
+                department="ops",
+                lab="lab-e",
+                recycle_level="low",
+                reason="自纳管以来未登录",
+                last_rdp_login_at=None,
+            )
+        )
+        session.commit()
+
+    with session_factory() as session:
+        processed_count = run_idle_analysis(session, as_of=as_of)
+
+    assert processed_count == 1
+
+    with session_factory() as session:
+        snapshots = session.scalars(
+            select(models.IdleVMSnapshot).order_by(models.IdleVMSnapshot.snapshot_date)
+        ).all()
+
+    assert len(snapshots) == 2
+    assert snapshots[0].snapshot_date == date(2026, 6, 10)
+    assert snapshots[0].idle_days == 44
+    assert snapshots[1].snapshot_date == date(2026, 6, 11)
+    assert snapshots[1].ip == "10.0.0.30"
+    assert snapshots[1].idle_days == 45
+    assert snapshots[1].reason == "自纳管以来未登录"

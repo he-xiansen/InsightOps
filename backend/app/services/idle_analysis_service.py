@@ -1,9 +1,10 @@
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.idle_vm_snapshot import IdleVMSnapshot
 from app.models.sync_job import SyncJob
 from app.models.vm_asset import VMAsset
 from app.repositories.idle_vm_snapshot_repository import IdleVMSnapshotRepository
@@ -46,33 +47,23 @@ class IdleAnalysisService:
         started_at = datetime.now(UTC)
         snapshot_rows: list[dict[str, object]] = []
         assets = self.session.scalars(select(VMAsset).order_by(VMAsset.ip)).all()
+        previous_snapshots = self.repository.get_latest_before_date_by_ips(
+            ips=[asset.ip for asset in assets],
+            snapshot_date=as_of.date(),
+        )
 
         for asset in assets:
-            reference_time = asset.last_rdp_login_at or asset.last_seen_at
-            if reference_time is None:
-                continue
-
-            idle_level = classify_idle_days(reference_time, as_of)
-            if idle_level.idle_days < idle_days_threshold:
-                continue
-
-            reason = (
-                f"连续 {idle_level.idle_days} 天未发生 RDP 登录"
-                if asset.last_rdp_login_at is not None
-                else "自纳管以来未登录"
+            snapshot_payload = self._build_snapshot_payload(
+                asset=asset,
+                as_of=as_of,
+                idle_days_threshold=idle_days_threshold,
+                previous_snapshot=previous_snapshots.get(asset.ip),
             )
+            if snapshot_payload is None:
+                continue
+
             snapshot_rows.append(
-                {
-                    "snapshot_date": as_of.date(),
-                    "ip": asset.ip,
-                    "idle_days": idle_level.idle_days,
-                    "owner": asset.owner,
-                    "department": asset.department,
-                    "lab": asset.lab,
-                    "recycle_level": idle_level.recycle_level,
-                    "reason": reason,
-                    "last_rdp_login_at": asset.last_rdp_login_at,
-                }
+                snapshot_payload
             )
 
         processed_count = self.repository.replace_for_snapshot_date(as_of.date(), snapshot_rows)
@@ -87,3 +78,49 @@ class IdleAnalysisService:
         )
         self.session.commit()
         return processed_count
+
+    def _build_snapshot_payload(
+        self,
+        *,
+        asset: VMAsset,
+        as_of: datetime,
+        idle_days_threshold: int,
+        previous_snapshot: IdleVMSnapshot | None,
+    ) -> dict[str, object] | None:
+        if asset.last_rdp_login_at is not None:
+            idle_level = classify_idle_days(asset.last_rdp_login_at, as_of)
+            if idle_level.idle_days < idle_days_threshold:
+                return None
+
+            return {
+                "snapshot_date": as_of.date(),
+                "ip": asset.ip,
+                "idle_days": idle_level.idle_days,
+                "owner": asset.owner,
+                "department": asset.department,
+                "lab": asset.lab,
+                "recycle_level": idle_level.recycle_level,
+                "reason": f"连续 {idle_level.idle_days} 天未发生 RDP 登录",
+                "last_rdp_login_at": asset.last_rdp_login_at,
+            }
+
+        if asset.last_seen_at is None and previous_snapshot is None:
+            return None
+
+        idle_days = idle_days_threshold
+        if previous_snapshot is not None:
+            days_since_last_snapshot = max((as_of.date() - previous_snapshot.snapshot_date).days, 0)
+            idle_days = max(previous_snapshot.idle_days + days_since_last_snapshot, idle_days_threshold)
+
+        idle_level = classify_idle_days(as_of - timedelta(days=idle_days), as_of)
+        return {
+            "snapshot_date": as_of.date(),
+            "ip": asset.ip,
+            "idle_days": idle_level.idle_days,
+            "owner": asset.owner,
+            "department": asset.department,
+            "lab": asset.lab,
+            "recycle_level": idle_level.recycle_level,
+            "reason": "自纳管以来未登录",
+            "last_rdp_login_at": None,
+        }

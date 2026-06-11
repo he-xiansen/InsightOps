@@ -20,6 +20,7 @@ class RDPIngestService:
         started_at = datetime.now(UTC)
         accepted_count = 0
         inserted_count = 0
+        existing_count = 0
 
         for event in events:
             if not is_rdp_logon_event(event):
@@ -28,7 +29,9 @@ class RDPIngestService:
             accepted_count += 1
             normalized_event = normalize_rdp_event(event)
 
-            if not self.repository.add_if_absent(normalized_event):
+            added, _login = self.repository.add_if_absent(normalized_event)
+            if not added:
+                existing_count += 1
                 continue
 
             inserted_count += 1
@@ -51,6 +54,7 @@ class RDPIngestService:
             "received_count": len(events),
             "accepted_count": accepted_count,
             "inserted_count": inserted_count,
+            "existing_count": existing_count,
         }
 
     def _update_asset_last_login(self, *, ip: str, login_at: datetime) -> None:

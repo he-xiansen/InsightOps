@@ -1,3 +1,4 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,11 +13,21 @@ class VMRdpLoginRepository:
         statement = select(VMRdpLogin).where(VMRdpLogin.raw_event_hash == raw_event_hash)
         return self.session.scalar(statement)
 
-    def add_if_absent(self, payload: dict[str, object]) -> bool:
+    def add_if_absent(self, payload: dict[str, object]) -> tuple[bool, VMRdpLogin]:
         raw_event_hash = str(payload["raw_event_hash"])
-        if self.get_by_raw_event_hash(raw_event_hash) is not None:
-            return False
+        existing = self.get_by_raw_event_hash(raw_event_hash)
+        if existing is not None:
+            return False, existing
 
-        self.session.add(VMRdpLogin(**payload))
-        self.session.flush()
-        return True
+        login = VMRdpLogin(**payload)
+        try:
+            with self.session.begin_nested():
+                self.session.add(login)
+                self.session.flush()
+        except IntegrityError:
+            existing = self.get_by_raw_event_hash(raw_event_hash)
+            if existing is None:
+                raise
+            return False, existing
+
+        return True, login

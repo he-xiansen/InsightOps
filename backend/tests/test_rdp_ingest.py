@@ -9,6 +9,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.collector.rdp_ingest import build_raw_event_hash, is_rdp_logon_event
 from app.models.base import Base
+from app.repositories.vm_rdp_login_repository import VMRdpLoginRepository
 from app.services.rdp_ingest_service import RDPIngestService
 
 
@@ -68,6 +69,13 @@ def test_build_raw_event_hash_is_stable_for_equivalent_payload() -> None:
     assert build_raw_event_hash(first) == build_raw_event_hash(second)
 
 
+def test_build_raw_event_hash_accepts_datetime_login_at() -> None:
+    event_with_datetime = build_event(login_at=datetime(2026, 6, 11, 10, 0, tzinfo=UTC))
+    event_with_iso_string = build_event(login_at="2026-06-11T10:00:00+00:00")
+
+    assert build_raw_event_hash(event_with_datetime) == build_raw_event_hash(event_with_iso_string)
+
+
 def test_ingest_events_deduplicates_hash_and_updates_asset_last_login_at(
     session_factory: sessionmaker[Session],
 ) -> None:
@@ -82,7 +90,12 @@ def test_ingest_events_deduplicates_hash_and_updates_asset_last_login_at(
         service = RDPIngestService(session)
         result = service.ingest_events([raw_event, dict(raw_event)])
 
-    assert result == {"received_count": 2, "accepted_count": 2, "inserted_count": 1}
+    assert result == {
+        "received_count": 2,
+        "accepted_count": 2,
+        "inserted_count": 1,
+        "existing_count": 1,
+    }
 
     with session_factory() as session:
         logins = session.scalars(select(models.VMRdpLogin)).all()
@@ -107,7 +120,12 @@ def test_ingest_events_skips_non_rdp_logons(session_factory: sessionmaker[Sessio
         service = RDPIngestService(session)
         result = service.ingest_events([build_event(logon_type=3), build_event(event_id=4634)])
 
-    assert result == {"received_count": 2, "accepted_count": 0, "inserted_count": 0}
+    assert result == {
+        "received_count": 2,
+        "accepted_count": 0,
+        "inserted_count": 0,
+        "existing_count": 0,
+    }
 
     with session_factory() as session:
         logins = session.scalars(select(models.VMRdpLogin)).all()
@@ -116,3 +134,67 @@ def test_ingest_events_skips_non_rdp_logons(session_factory: sessionmaker[Sessio
     assert logins == []
     assert len(jobs) == 1
     assert jobs[0].processed_count == 0
+
+
+def test_ingest_events_returns_existing_count_for_preexisting_hash(
+    session_factory: sessionmaker[Session],
+) -> None:
+    raw_event = build_event()
+    normalized_hash = build_raw_event_hash(raw_event)
+
+    with session_factory() as session:
+        session.add(
+            models.VMRdpLogin(
+                ip="10.0.0.10",
+                username="alice",
+                login_at=datetime(2026, 6, 11, 10, 0, tzinfo=UTC),
+                raw_event_hash=normalized_hash,
+            )
+        )
+        session.commit()
+
+    with session_factory() as session:
+        service = RDPIngestService(session)
+        result = service.ingest_events([raw_event])
+
+    assert result == {
+        "received_count": 1,
+        "accepted_count": 1,
+        "inserted_count": 0,
+        "existing_count": 1,
+    }
+
+
+def test_repository_handles_duplicate_hash_conflict_as_existing(
+    session_factory: sessionmaker[Session],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = {
+        "ip": "10.0.0.10",
+        "username": "alice",
+        "login_at": datetime(2026, 6, 11, 10, 0, tzinfo=UTC),
+        "raw_event_hash": "dup-hash",
+    }
+
+    with session_factory() as session:
+        session.add(models.VMRdpLogin(**payload))
+        session.commit()
+
+    with session_factory() as session:
+        repository = VMRdpLoginRepository(session)
+        original_get_by_raw_event_hash = repository.get_by_raw_event_hash
+        call_count = {"value": 0}
+
+        def simulate_race(raw_event_hash: str) -> models.VMRdpLogin | None:
+            call_count["value"] += 1
+            if call_count["value"] == 1:
+                return None
+            return original_get_by_raw_event_hash(raw_event_hash)
+
+        monkeypatch.setattr(repository, "get_by_raw_event_hash", simulate_race)
+
+        added, login = repository.add_if_absent(payload)
+
+    assert added is False
+    assert login is not None
+    assert login.raw_event_hash == "dup-hash"
