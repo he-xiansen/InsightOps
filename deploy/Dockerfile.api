@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app/backend
+
+RUN python -m pip install --upgrade pip && \
+    python -m pip install \
+        fastapi==0.115.0 \
+        uvicorn==0.30.6 \
+        sqlalchemy==2.0.36 \
+        pydantic-settings==2.5.2 \
+        pymysql==1.1.1
+
+COPY backend/ ./
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

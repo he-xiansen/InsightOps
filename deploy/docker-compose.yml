@@ -1,0 +1,79 @@
+services:
+  insightops-mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${PROJECT_DB_NAME:-insightops}
+      MYSQL_USER: ${PROJECT_DB_USER:-insightops}
+      MYSQL_PASSWORD: ${PROJECT_DB_PASSWORD:-insightops}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+    ports:
+      - "${PROJECT_DB_EXPOSE_PORT:-3307}:3306"
+    volumes:
+      - insightops-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  insightops-api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      insightops-mysql:
+        condition: service_healthy
+    environment:
+      app_name: ${APP_NAME:-InsightOps}
+      app_env: ${APP_ENV:-prod}
+      project_db_host: ${PROJECT_DB_HOST:-insightops-mysql}
+      project_db_port: ${PROJECT_DB_PORT:-3306}
+      project_db_user: ${PROJECT_DB_USER:-insightops}
+      project_db_password: ${PROJECT_DB_PASSWORD:-insightops}
+      project_db_name: ${PROJECT_DB_NAME:-insightops}
+      zabbix_db_host: ${ZABBIX_DB_HOST:-zabbix-mysql}
+      zabbix_db_port: ${ZABBIX_DB_PORT:-3306}
+      zabbix_db_user: ${ZABBIX_DB_USER:-readonly}
+      zabbix_db_password: ${ZABBIX_DB_PASSWORD:-readonly}
+      zabbix_db_name: ${ZABBIX_DB_NAME:-zabbix}
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+  insightops-collector:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.collector
+    restart: unless-stopped
+    depends_on:
+      insightops-mysql:
+        condition: service_healthy
+    environment:
+      app_name: ${APP_NAME:-InsightOps}
+      app_env: ${APP_ENV:-prod}
+      project_db_host: ${PROJECT_DB_HOST:-insightops-mysql}
+      project_db_port: ${PROJECT_DB_PORT:-3306}
+      project_db_user: ${PROJECT_DB_USER:-insightops}
+      project_db_password: ${PROJECT_DB_PASSWORD:-insightops}
+      project_db_name: ${PROJECT_DB_NAME:-insightops}
+      zabbix_db_host: ${ZABBIX_DB_HOST:-zabbix-mysql}
+      zabbix_db_port: ${ZABBIX_DB_PORT:-3306}
+      zabbix_db_user: ${ZABBIX_DB_USER:-readonly}
+      zabbix_db_password: ${ZABBIX_DB_PASSWORD:-readonly}
+      zabbix_db_name: ${ZABBIX_DB_NAME:-zabbix}
+
+  insightops-frontend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+    restart: unless-stopped
+    depends_on:
+      insightops-api:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+
+volumes:
+  insightops-mysql-data:
