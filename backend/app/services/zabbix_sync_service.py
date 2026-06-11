@@ -5,7 +5,9 @@ from sqlalchemy.orm import Session
 from app.collector.zabbix_reader import normalize_host_row
 from app.models.sync_job import SyncJob
 from app.repositories.zabbix_host_mapping_repository import ZabbixHostMappingRepository
-from app.tasks.zabbix_sync import build_host_sync_job_name
+
+
+ZABBIX_HOST_SYNC_JOB_NAME = "zabbix_host_sync"
 
 
 class ZabbixSyncService:
@@ -27,7 +29,7 @@ class ZabbixSyncService:
         processed_count = self.repository.upsert_many(normalized_rows)
         self.session.add(
             SyncJob(
-                job_type=build_host_sync_job_name(),
+                job_type=ZABBIX_HOST_SYNC_JOB_NAME,
                 started_at=started_at,
                 finished_at=datetime.now(timezone.utc),
                 status="success",

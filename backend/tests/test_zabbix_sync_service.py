@@ -8,7 +8,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.models.base import Base
 from app.services.zabbix_sync_service import ZabbixSyncService
-from app.tasks.zabbix_sync import build_host_sync_job_name
+from app.tasks.zabbix_sync import build_host_sync_job_name, run_zabbix_host_sync
 
 
 @pytest.fixture()
@@ -87,3 +87,37 @@ def test_sync_host_rows_updates_existing_mapping_for_same_ip(
     assert mapping.available is False
     assert len(jobs) == 2
     assert [job.processed_count for job in jobs] == [1, 1]
+
+
+def test_run_zabbix_host_sync_queries_reader_and_reuses_service(
+    monkeypatch: pytest.MonkeyPatch,
+    session_factory: sessionmaker[Session],
+) -> None:
+    observed_engine: list[object] = []
+
+    def fake_fetch_host_rows(engine: object) -> list[dict[str, object]]:
+        observed_engine.append(engine)
+        return [
+            {"hostid": 10084, "host": "vm-01", "ip": "10.0.0.10", "available": 1},
+            {"hostid": 10085, "host": "vm-02", "ip": "10.0.0.11", "available": 2},
+        ]
+
+    fake_engine = object()
+    monkeypatch.setattr("app.tasks.zabbix_sync.fetch_host_rows", fake_fetch_host_rows)
+
+    with session_factory() as session:
+        processed_count = run_zabbix_host_sync(session, fake_engine)
+
+    assert processed_count == 2
+    assert observed_engine == [fake_engine]
+
+    with session_factory() as session:
+        mappings = session.scalars(select(models.ZabbixHostMapping).order_by(models.ZabbixHostMapping.ip)).all()
+        jobs = session.scalars(select(models.SyncJob)).all()
+
+    assert [(mapping.ip, mapping.available) for mapping in mappings] == [
+        ("10.0.0.10", True),
+        ("10.0.0.11", False),
+    ]
+    assert len(jobs) == 1
+    assert jobs[0].job_type == build_host_sync_job_name()
