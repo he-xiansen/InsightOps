@@ -2,7 +2,12 @@ import argparse
 import os
 from collections.abc import Sequence
 
-from app.core.database import build_project_session_factory, build_zabbix_engine, get_settings
+from app.core.database import (
+    build_project_session_factory,
+    build_zabbix_engine,
+    get_project_settings,
+    get_zabbix_settings,
+)
 from app.tasks.idle_analysis import DEFAULT_IDLE_DAYS, run_idle_analysis
 from app.tasks.zabbix_sync import run_zabbix_host_sync
 
@@ -18,12 +23,12 @@ def resolve_task_name(cli_task: str | None, env_task: str | None) -> str:
 
 
 def run_selected_task(task_name: str, idle_days: int) -> int:
-    settings = get_settings()
-    session_factory = build_project_session_factory(settings)
+    project_settings = get_project_settings()
+    session_factory = build_project_session_factory(project_settings)
 
     with session_factory() as session:
         if task_name == "zabbix_host_sync":
-            zabbix_engine = build_zabbix_engine(settings)
+            zabbix_engine = build_zabbix_engine(get_zabbix_settings())
             try:
                 return run_zabbix_host_sync(session, zabbix_engine)
             finally:
