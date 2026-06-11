@@ -168,6 +168,45 @@ def test_bulk_upsert_deduplicates_same_ip_within_single_batch(
     assert api_key.last_used_at is not None
 
 
+def test_bulk_upsert_merges_fields_for_same_ip_within_single_batch(
+    client: TestClient,
+    session_factory: sessionmaker[Session],
+) -> None:
+    seed_api_key(session_factory)
+
+    response = client.post(
+        "/api/assets/bulk-upsert",
+        headers={"X-API-Key": "secret-key"},
+        json={
+            "items": [
+                {
+                    "ip": "10.0.0.3",
+                    "hostname": "vm-03",
+                    "owner": "alice",
+                    "lab": "lab-a",
+                },
+                {
+                    "ip": "10.0.0.3",
+                    "hostname": "vm-03-renamed",
+                    "status": "inactive",
+                },
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"processed_count": 2, "upserted_count": 1}
+
+    with session_factory() as session:
+        asset = session.get(VMAsset, "10.0.0.3")
+
+    assert asset is not None
+    assert asset.hostname == "vm-03-renamed"
+    assert asset.status == "inactive"
+    assert asset.owner == "alice"
+    assert asset.lab == "lab-a"
+
+
 def test_bulk_upsert_updates_existing_asset_and_returns_unique_upsert_count(
     client: TestClient,
     session_factory: sessionmaker[Session],

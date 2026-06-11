@@ -13,7 +13,10 @@ class VMAssetRepository:
         deduplicated_by_ip: dict[str, dict[str, object]] = {}
 
         for payload in payloads:
-            deduplicated_by_ip[str(payload["ip"])] = payload
+            ip = str(payload["ip"])
+            merged_payload = dict(deduplicated_by_ip.get(ip, {}))
+            merged_payload.update(payload)
+            deduplicated_by_ip[ip] = merged_payload
 
         return list(deduplicated_by_ip.values())
 
