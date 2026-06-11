@@ -28,6 +28,10 @@ class VMAssetRepository:
         assets = self.session.scalars(statement).all()
         return {asset.ip: asset for asset in assets}
 
+    def list_all(self) -> list[VMAsset]:
+        statement = select(VMAsset).order_by(VMAsset.ip)
+        return self.session.scalars(statement).all()
+
     def upsert_many(self, payloads: list[dict[str, object]]) -> int:
         deduplicated_payloads = self._deduplicate_payloads(payloads)
         existing_assets = self.get_by_ips([str(payload["ip"]) for payload in deduplicated_payloads])

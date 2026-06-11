@@ -296,3 +296,55 @@ def test_sync_assets_reuses_payload_and_records_sync_job(
     assert sync_jobs[0].finished_at is not None
     assert asset is not None
     assert asset.hostname == "sync-vm"
+
+
+def test_list_assets_returns_vm_asset_fields(
+    client: TestClient,
+    session_factory: sessionmaker[Session],
+) -> None:
+    with session_factory() as session:
+        session.add_all(
+            [
+                VMAsset(
+                    ip="10.0.0.2",
+                    hostname="vm-02",
+                    owner="bob",
+                ),
+                VMAsset(
+                    ip="10.0.0.1",
+                    hostname="vm-01",
+                    owner="alice",
+                    department="platform",
+                    last_rdp_login_at=datetime(2026, 6, 1, 8, 0, tzinfo=timezone.utc),
+                ),
+            ]
+        )
+        session.commit()
+
+    response = client.get("/api/assets")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "items": [
+            {
+                "ip": "10.0.0.1",
+                "hostname": "vm-01",
+                "department": "platform",
+                "lab": None,
+                "owner": "alice",
+                "os_type": None,
+                "status": "active",
+                "last_rdp_login_at": "2026-06-01T08:00:00",
+            },
+            {
+                "ip": "10.0.0.2",
+                "hostname": "vm-02",
+                "department": None,
+                "lab": None,
+                "owner": "bob",
+                "os_type": None,
+                "status": "active",
+                "last_rdp_login_at": None,
+            },
+        ]
+    }

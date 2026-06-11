@@ -3,11 +3,21 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_session
 from app.core.security import require_api_key
-from app.schemas.vm_asset import BulkUpsertVMAssetsRequest, BulkUpsertVMAssetsResponse
+from app.schemas.vm_asset import (
+    BulkUpsertVMAssetsRequest,
+    BulkUpsertVMAssetsResponse,
+    VMAssetListResponse,
+)
 from app.services.vm_asset_service import VMAssetService
 
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
+
+
+@router.get("", response_model=VMAssetListResponse)
+def list_assets(session: Session = Depends(get_session)) -> VMAssetListResponse:
+    service = VMAssetService(session)
+    return service.list_assets()
 
 
 @router.post("/bulk-upsert", response_model=BulkUpsertVMAssetsResponse)

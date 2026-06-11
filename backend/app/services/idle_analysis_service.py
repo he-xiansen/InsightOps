@@ -8,9 +8,11 @@ from app.models.idle_vm_snapshot import IdleVMSnapshot
 from app.models.sync_job import SyncJob
 from app.models.vm_asset import VMAsset
 from app.repositories.idle_vm_snapshot_repository import IdleVMSnapshotRepository
+from app.schemas.vm_asset import IdleVMListItem, IdleVMListResponse
 
 
 IDLE_ANALYSIS_JOB_NAME = "idle_analysis"
+DEFAULT_IDLE_DAYS = 30
 
 
 @dataclass(frozen=True)
@@ -78,6 +80,25 @@ class IdleAnalysisService:
         )
         self.session.commit()
         return processed_count
+
+    def list_idle_assets(self, *, idle_days_threshold: int = DEFAULT_IDLE_DAYS) -> IdleVMListResponse:
+        snapshots = self.repository.list_latest(idle_days_threshold=idle_days_threshold)
+        return IdleVMListResponse(
+            items=[
+                IdleVMListItem(
+                    snapshot_date=snapshot.snapshot_date,
+                    ip=snapshot.ip,
+                    idle_days=snapshot.idle_days,
+                    owner=snapshot.owner,
+                    department=snapshot.department,
+                    lab=snapshot.lab,
+                    recycle_level=snapshot.recycle_level,
+                    reason=snapshot.reason,
+                    last_rdp_login_at=snapshot.last_rdp_login_at,
+                )
+                for snapshot in snapshots
+            ]
+        )
 
     def _build_snapshot_payload(
         self,

@@ -9,6 +9,8 @@ from app.schemas.vm_asset import (
     AssetSyncResponseData,
     BulkUpsertVMAssetsRequest,
     BulkUpsertVMAssetsResponse,
+    VMAssetListItem,
+    VMAssetListResponse,
 )
 
 
@@ -38,6 +40,24 @@ class VMAssetService:
         return BulkUpsertVMAssetsResponse(
             processed_count=len(serialized_items),
             upserted_count=upserted_count,
+        )
+
+    def list_assets(self) -> VMAssetListResponse:
+        assets = self.repository.list_all()
+        return VMAssetListResponse(
+            items=[
+                VMAssetListItem(
+                    ip=asset.ip,
+                    hostname=asset.hostname,
+                    department=asset.department,
+                    lab=asset.lab,
+                    owner=asset.owner,
+                    os_type=asset.os_type,
+                    status=asset.status,
+                    last_rdp_login_at=asset.last_rdp_login_at,
+                )
+                for asset in assets
+            ]
         )
 
     def sync_assets(self, payload: BulkUpsertVMAssetsRequest) -> AssetSyncResponse:

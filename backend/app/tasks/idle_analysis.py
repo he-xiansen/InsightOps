@@ -2,10 +2,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy.orm import Session
 
-from app.services.idle_analysis_service import IdleAnalysisService
-
-
-DEFAULT_IDLE_DAYS = 30
+from app.services.idle_analysis_service import DEFAULT_IDLE_DAYS, IdleAnalysisService
 
 
 def build_idle_analysis_job_name() -> str:

@@ -44,3 +44,18 @@ class IdleVMSnapshotRepository:
 
         self.session.flush()
         return len(payloads)
+
+    def list_latest(self, *, idle_days_threshold: int) -> list[IdleVMSnapshot]:
+        latest_snapshot_date = self.session.scalar(select(IdleVMSnapshot.snapshot_date).order_by(IdleVMSnapshot.snapshot_date.desc()).limit(1))
+        if latest_snapshot_date is None:
+            return []
+
+        statement = (
+            select(IdleVMSnapshot)
+            .where(
+                IdleVMSnapshot.snapshot_date == latest_snapshot_date,
+                IdleVMSnapshot.idle_days >= idle_days_threshold,
+            )
+            .order_by(IdleVMSnapshot.ip)
+        )
+        return self.session.scalars(statement).all()

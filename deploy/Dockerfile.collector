@@ -21,4 +21,4 @@ RUN chown -R insightops:insightops /app/backend
 
 USER insightops
 
-CMD ["sh", "-c", "echo 'collector service is ready for manual sync tasks'; tail -f /dev/null"]
+CMD ["python", "-m", "app.collector_runner"]
