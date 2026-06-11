@@ -144,6 +144,30 @@ curl http://127.0.0.1:${FRONTEND_PORT:-8080}/health
 - API 返回 `{"status":"ok"}`。
 - 前端的 `/health` 会被 Nginx 反代到 API，便于内网统一探活。
 
+## 整体验证
+
+在提交部署包、切换环境变量或通知联调前，建议先完成一轮仓库级整体验证。当前仓库已经实际执行并通过的最小验证集合如下：
+
+```bash
+cd /opt/trae/InsightOps/backend
+.venv/bin/pytest
+
+cd /opt/trae/InsightOps/frontend
+npm run build
+
+cd /opt/trae/InsightOps
+docker compose --env-file deploy/.env.example -f deploy/docker-compose.yml config
+```
+
+说明：
+
+- `backend/.venv/bin/pytest` 用于确认 FastAPI、模型、同步逻辑与 API 测试全部通过。
+- `frontend` 的 `npm run build` 用于确认生产构建可成功产出 `dist/`。
+- `docker compose ... config` 用于确认编排文件、依赖关系与变量展开结果正确。
+- 使用 `deploy/.env.example` 执行 `docker compose config`，适合做仓库默认配置校验；在真实内网环境交付前，应再用正式的 `deploy/.env` 复跑一次相同命令。
+
+建议将验证结果记录到交付单，至少包含命令、执行时间、执行人、退出码和关键摘要，例如 `40 passed`、`vite build succeeded`、`docker compose config exited 0`。
+
 ## 采集容器使用方式
 
 `insightops-collector` 默认保持运行但不自动执行周期任务，适合一期环境下手工触发。可以在容器内执行临时脚本，例如：
@@ -158,7 +182,7 @@ docker compose --env-file deploy/.env -f deploy/docker-compose.yml exec insighto
 
 1. 拉取最新代码，并对比 `deploy/.env.example`、`backend/.env.example` 是否新增变量。
 2. 备份业务库数据，例如在 `insightops-mysql` 容器内执行 `mysqldump` 导出 `PROJECT_DB_NAME`。
-3. 先运行 `docker compose -f deploy/docker-compose.yml config` 校验编排。
+3. 先运行 `docker compose --env-file deploy/.env -f deploy/docker-compose.yml config` 校验编排。
 4. 执行 `docker compose --env-file deploy/.env -f deploy/docker-compose.yml run --rm insightops-db-init`，补齐新增表结构。
 5. 执行 `docker compose --env-file deploy/.env -f deploy/docker-compose.yml up -d --build` 更新服务。
 6. 重新执行健康检查、接口调用与 Zabbix 连通性验证。
@@ -168,4 +192,14 @@ docker compose --env-file deploy/.env -f deploy/docker-compose.yml exec insighto
 - API 无法启动：检查 `PROJECT_DB_*` 是否指向可用的 MySQL，确认密码与库名一致，并确认 `insightops-db-init` 已成功执行。
 - 前端页面空白：先查看 `docker compose ... logs insightops-frontend`，再确认浏览器访问的是 `http://<host>:${FRONTEND_PORT:-8080}`。
 - Zabbix 同步失败：确认 `ZABBIX_DB_*` 为只读账号且部署机到 Zabbix MySQL 网络可达，并执行上文连通性验证。
-- Compose 校验失败：优先执行 `docker compose -f deploy/docker-compose.yml config` 检查 YAML 结构，再补充 `--env-file deploy/.env` 验证最终变量展开结果。
+- Compose 校验失败：优先执行 `docker compose --env-file deploy/.env -f deploy/docker-compose.yml config` 检查最终变量展开结果；如仅需排查 YAML 结构，再退回不带 `--env-file` 的基础校验。
+
+## 交付说明
+
+建议将以下内容作为内网部署交付件的一部分：
+
+- 当前代码版本与对应 commit SHA。
+- 已确认的 `deploy/.env` 变量清单，敏感字段通过密码库或密钥平台单独交接。
+- 一次完整的验证记录，至少覆盖后端测试、前端构建、Compose 编排校验。
+- 首次部署所需的 API Key 初始化记录，包括生成时间、用途说明和保管人。
+- 回滚入口说明，例如上一版镜像标签、数据库备份位置和恢复联系人。

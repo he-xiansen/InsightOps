@@ -137,8 +137,39 @@ response.raise_for_status()
 print(response.json())
 ```
 
+## 联调前置验证
+
+在提交接口联调结果或交付给外部同步方前，建议先完成以下检查：
+
+```bash
+cd /opt/trae/InsightOps/backend
+.venv/bin/pytest
+
+cd /opt/trae/InsightOps/frontend
+npm run build
+
+cd /opt/trae/InsightOps
+docker compose --env-file deploy/.env.example -f deploy/docker-compose.yml config
+```
+
+联调环境中如果使用正式部署变量，请将最后一条命令替换为：
+
+```bash
+cd /opt/trae/InsightOps
+docker compose --env-file deploy/.env -f deploy/docker-compose.yml config
+```
+
+只有在测试通过、前端可构建、Compose 编排可展开后，再进入接口调用验证，可以减少把环境问题误判为接口问题的情况。
+
 ## 联调建议
 
 - 在外部同步端按 `ip` 去重，减少无效覆盖写入。
 - 当字段为空且不希望覆盖已有值时，不要传该字段。
 - 建议先调用 `GET /health` 验证 API 连通性，再执行批量同步。
+- 如果走容器化联调，建议先执行部署文档中的 `docker compose ps`、`/health` 探活与 API Key 校验，再调用同步接口。
+
+## 交付说明
+
+- 交付给调用方时，至少同步接口地址、`X-API-Key` 交付方式、请求示例、成功响应示例和失败响应语义。
+- 交付记录中建议附上本次使用的验证命令与结果摘要，例如后端 `40 passed`、前端构建成功、Compose 校验退出码为 `0`。
+- 如果接口依赖正式内网地址、反向代理或网闸策略，需同时说明来源 IP 白名单、超时设置和责任人。
