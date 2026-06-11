@@ -8,6 +8,15 @@ class VMAssetRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
+    @staticmethod
+    def _deduplicate_payloads(payloads: list[dict[str, object]]) -> list[dict[str, object]]:
+        deduplicated_by_ip: dict[str, dict[str, object]] = {}
+
+        for payload in payloads:
+            deduplicated_by_ip[str(payload["ip"])] = payload
+
+        return list(deduplicated_by_ip.values())
+
     def get_by_ips(self, ips: list[str]) -> dict[str, VMAsset]:
         if not ips:
             return {}
@@ -17,9 +26,10 @@ class VMAssetRepository:
         return {asset.ip: asset for asset in assets}
 
     def upsert_many(self, payloads: list[dict[str, object]]) -> int:
-        existing_assets = self.get_by_ips([str(payload["ip"]) for payload in payloads])
+        deduplicated_payloads = self._deduplicate_payloads(payloads)
+        existing_assets = self.get_by_ips([str(payload["ip"]) for payload in deduplicated_payloads])
 
-        for payload in payloads:
+        for payload in deduplicated_payloads:
             ip = str(payload["ip"])
             asset = existing_assets.get(ip)
 
@@ -32,4 +42,4 @@ class VMAssetRepository:
                 setattr(asset, field_name, value)
 
         self.session.flush()
-        return len(payloads)
+        return len(deduplicated_payloads)

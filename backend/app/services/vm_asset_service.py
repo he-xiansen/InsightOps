@@ -6,6 +6,7 @@ from app.models.sync_job import SyncJob
 from app.repositories.vm_asset_repository import VMAssetRepository
 from app.schemas.vm_asset import (
     AssetSyncResponse,
+    AssetSyncResponseData,
     BulkUpsertVMAssetsRequest,
     BulkUpsertVMAssetsResponse,
 )
@@ -42,19 +43,19 @@ class VMAssetService:
     def sync_assets(self, payload: BulkUpsertVMAssetsRequest) -> AssetSyncResponse:
         started_at = datetime.now(timezone.utc)
         serialized_items = self._serialize_payload(payload)
-        processed_count = self.repository.upsert_many(serialized_items)
+        upserted_count = self.repository.upsert_many(serialized_items)
         self.session.add(
             SyncJob(
                 job_type="asset_sync",
                 started_at=started_at,
                 finished_at=datetime.now(timezone.utc),
                 status="success",
-                processed_count=processed_count,
+                processed_count=upserted_count,
             )
         )
         self.session.commit()
         return AssetSyncResponse(
-            job_type="asset_sync",
-            processed_count=processed_count,
-            status="success",
+            code=0,
+            message="success",
+            data=AssetSyncResponseData(upserted_count=upserted_count),
         )

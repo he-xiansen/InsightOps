@@ -100,7 +100,75 @@ def test_bulk_upsert_rejects_invalid_api_key(
     assert response.json()["detail"]
 
 
-def test_bulk_upsert_creates_and_updates_assets(
+def test_bulk_upsert_rejects_disabled_api_key(
+    client: TestClient,
+    session_factory: sessionmaker[Session],
+) -> None:
+    seed_api_key(session_factory, enabled=False)
+
+    response = client.post(
+        "/api/assets/bulk-upsert",
+        headers={"X-API-Key": "secret-key"},
+        json={"items": [{"ip": "10.0.0.1", "hostname": "vm-01"}]},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"]
+
+
+def test_bulk_upsert_rejects_expired_api_key(
+    client: TestClient,
+    session_factory: sessionmaker[Session],
+) -> None:
+    seed_api_key(session_factory, expires_at=datetime.now(timezone.utc) - timedelta(seconds=1))
+
+    response = client.post(
+        "/api/assets/bulk-upsert",
+        headers={"X-API-Key": "secret-key"},
+        json={"items": [{"ip": "10.0.0.1", "hostname": "vm-01"}]},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"]
+
+
+def test_bulk_upsert_deduplicates_same_ip_within_single_batch(
+    client: TestClient,
+    session_factory: sessionmaker[Session],
+) -> None:
+    seed_api_key(session_factory)
+
+    response = client.post(
+        "/api/assets/bulk-upsert",
+        headers={"X-API-Key": "secret-key"},
+        json={
+            "items": [
+                {"ip": "10.0.0.1", "hostname": "vm-01", "department": "engineering"},
+                {
+                    "ip": "10.0.0.1",
+                    "hostname": "vm-01-renamed",
+                    "department": "platform",
+                    "status": "inactive",
+                },
+            ]
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"processed_count": 2, "upserted_count": 1}
+
+    with session_factory() as session:
+        assets = session.scalars(select(VMAsset).order_by(VMAsset.ip)).all()
+        api_key = session.get(APIKey, "test-key")
+
+    assert [(asset.ip, asset.hostname, asset.department, asset.status) for asset in assets] == [
+        ("10.0.0.1", "vm-01-renamed", "platform", "inactive"),
+    ]
+    assert api_key is not None
+    assert api_key.last_used_at is not None
+
+
+def test_bulk_upsert_updates_existing_asset_and_returns_unique_upsert_count(
     client: TestClient,
     session_factory: sessionmaker[Session],
 ) -> None:
@@ -157,7 +225,7 @@ def test_sync_assets_reuses_payload_and_records_sync_job(
     seed_api_key(session_factory, expires_at=datetime.now(timezone.utc) + timedelta(days=1))
 
     response = client.post(
-        "/api/sync/assets",
+        "/api/v1/sync/vm-assets",
         headers={"X-API-Key": "secret-key"},
         json={
             "items": [
@@ -172,9 +240,11 @@ def test_sync_assets_reuses_payload_and_records_sync_job(
     )
 
     assert response.status_code == 200
-    assert response.json()["job_type"] == "asset_sync"
-    assert response.json()["processed_count"] == 1
-    assert response.json()["status"] == "success"
+    assert response.json() == {
+        "code": 0,
+        "message": "success",
+        "data": {"upserted_count": 1},
+    }
 
     with session_factory() as session:
         sync_jobs = session.scalars(select(SyncJob)).all()

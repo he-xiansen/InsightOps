@@ -24,7 +24,11 @@ class BulkUpsertVMAssetsResponse(BaseModel):
     upserted_count: int
 
 
+class AssetSyncResponseData(BaseModel):
+    upserted_count: int
+
+
 class AssetSyncResponse(BaseModel):
-    job_type: str
-    processed_count: int
-    status: str
+    code: int
+    message: str
+    data: AssetSyncResponseData

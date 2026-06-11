@@ -7,10 +7,10 @@ from app.schemas.vm_asset import AssetSyncResponse, BulkUpsertVMAssetsRequest
 from app.services.vm_asset_service import VMAssetService
 
 
-router = APIRouter(prefix="/api/sync", tags=["sync"])
+router = APIRouter(prefix="/api/v1/sync", tags=["sync"])
 
 
-@router.post("/assets", response_model=AssetSyncResponse)
+@router.post("/vm-assets", response_model=AssetSyncResponse)
 def sync_assets(
     payload: BulkUpsertVMAssetsRequest,
     session: Session = Depends(get_session),
