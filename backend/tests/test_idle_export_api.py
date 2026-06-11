@@ -88,7 +88,7 @@ def test_idle_export_returns_csv_rows_for_snapshots(
     assert response.headers["content-type"].startswith("text/csv")
     assert response.headers["content-disposition"] == 'attachment; filename="idle-snapshots.csv"'
     assert response.text == (
-        "snapshot_date,ip,owner,department,lab,idle_days,recycle_level,reason,last_rdp_login_at\r\n"
-        "2026-06-11,10.0.0.10,alice,platform,lab-a,45,low,连续 45 天未发生 RDP 登录,2026-04-27T08:00:00+00:00\r\n"
-        "2026-06-11,10.0.0.11,bob,ops,lab-b,95,high,连续 95 天未发生 RDP 登录,2026-03-08T08:00:00+00:00\r\n"
+        "ip,owner,idle_days,recycle_level\r\n"
+        "10.0.0.10,alice,45,low\r\n"
+        "10.0.0.11,bob,95,high\r\n"
     )
