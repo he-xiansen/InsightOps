@@ -84,7 +84,7 @@ PY
 
 ```bash
 docker compose --env-file deploy/.env -f deploy/docker-compose.yml exec insightops-mysql \
-  sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$PROJECT_DB_NAME" <<"SQL"
+  sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" <<"SQL"
 INSERT INTO api_keys (key_name, key_hash, enabled, expires_at, last_used_at)
 VALUES ("default-sync", "替换为上一步输出的 API_KEY_SHA256", 1, NULL, NULL)
 ON DUPLICATE KEY UPDATE
@@ -99,7 +99,7 @@ SQL'
 
 ```bash
 docker compose --env-file deploy/.env -f deploy/docker-compose.yml exec insightops-mysql \
-  sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$PROJECT_DB_NAME" -e "SELECT key_name, enabled, expires_at FROM api_keys;"'
+  sh -lc 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE" -e "SELECT key_name, enabled, expires_at FROM api_keys;"'
 ```
 
 ## Zabbix 连通性验证
