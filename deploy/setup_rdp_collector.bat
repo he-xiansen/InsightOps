@@ -55,7 +55,7 @@ if not exist "%PS1_TARGET%" (
 echo [OK]
 
 :: ---- 4. Scheduled task ----
-echo [4/5] Creating scheduled task (every 5 min)...
+echo [4/5] Creating scheduled task - every 5 min...
 schtasks /Create /F /TN "%TASK_NAME%" ^
     /SC MINUTE /MO 5 ^
     /RU SYSTEM ^
@@ -83,14 +83,14 @@ if %TEST_EXIT% equ 0 (
     echo.
     echo   Script: %PS1_TARGET%
     echo   Target: %API_URL%/api/v1/rdp/ingest
-    echo   Task:   %TASK_NAME% (every 5 min)
+    echo   Task:   %TASK_NAME%  - every 5 min
     echo.
     echo   Manual run: powershell -NoProfile -File "%PS1_TARGET%"
     echo   View task:  taskschd.msc
     echo ==============================================
 ) else (
     echo.
-    echo [WARN] Test run failed (exit code %TEST_EXIT%)
+    echo [WARN] Test run failed - exit code %TEST_EXIT%
     echo   Task has been created. Will retry every 5 min.
     echo   Check:
     echo     1. Is %API_URL% reachable?
