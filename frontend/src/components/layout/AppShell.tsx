@@ -62,9 +62,9 @@ export function AppShell({ navItems }: AppShellProps) {
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded transition-colors ${
+                `flex items-center gap-3 px-4 py-3 rounded transition-colors duration-200 ${
                   isActive
-                    ? "bg-primary-container text-on-primary-container border-l-4 border-primary"
+                    ? "bg-primary-container text-on-primary-container border-l-4 border-primary transition-opacity active:opacity-85"
                     : "text-on-surface-variant hover:bg-white/[0.04]"
                 }`
               }

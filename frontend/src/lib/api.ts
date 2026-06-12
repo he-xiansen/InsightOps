@@ -36,6 +36,18 @@ export type RdpTrendResponse = {
   data: { granularity: string; series: RdpTrendPoint[] };
 };
 
+export type RdpLoginItem = {
+  id: number;
+  ip: string;
+  login_at: string;
+  username: string | null;
+};
+
+export type RdpLoginListResponse = {
+  items: RdpLoginItem[];
+  total: number;
+};
+
 // apiFetch 泛型基础方法
 const JSON_HEADERS = { Accept: "application/json" };
 
@@ -73,4 +85,13 @@ export async function getRdpTrends(
 
 export function getIdleExportUrl(): string {
   return "/api/v1/idle/export";
+}
+
+export async function getRdpLogins(
+  limit: number = 50,
+  offset: number = 0,
+): Promise<RdpLoginListResponse> {
+  return apiFetch<RdpLoginListResponse>(
+    `/api/v1/rdp/logins?limit=${limit}&offset=${offset}`,
+  );
 }
