@@ -17,12 +17,25 @@ echo   InsightOps RDP 采集器 安装
 echo ============================================
 echo.
 
+:: ---- 读取配置文件 (rdp-collector-config.bat) ----
+if exist "rdp-collector-config.bat" (
+    echo [检测到配置文件，正在读取...]
+    call "rdp-collector-config.bat"
+) else (
+    echo [未找到配置文件，将使用交互输入]
+    echo.
+)
+
 :: ---- 采集 InsightOps 地址 ----
-set /p API_URL="请输入 InsightOps 地址 (默认 http://10.0.0.10:8000): "
+if "%API_URL%"=="" (
+    set /p API_URL="请输入 InsightOps 地址 (默认 http://10.0.0.10:8000): "
+)
 if "%API_URL%"=="" set API_URL=http://10.0.0.10:8000
 
 :: ---- 采集 API Key ----
-set /p API_KEY="请输入 API Key (之前生成的 insightops_rdp_... ): "
+if "%API_KEY%"=="" (
+    set /p API_KEY="请输入 API Key (之前生成的 insightops_rdp_... ): "
+)
 if "%API_KEY%"=="" (
     echo [错误] API Key 不能为空
     pause
