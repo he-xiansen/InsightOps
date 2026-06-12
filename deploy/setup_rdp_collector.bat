@@ -2,6 +2,12 @@
 chcp 65001 >nul
 title InsightOps RDP 采集器 - 安装程序
 
+:: ========================================
+:: 配置区 — 修改这里的 URL 即可
+:: ========================================
+set API_URL=http://172.27.39.32:8000
+:: ========================================
+
 :: ---- 检查管理员权限 ----
 net session >nul 2>&1
 if %errorLevel% neq 0 (
@@ -15,34 +21,10 @@ cd /d "%~dp0"
 echo ============================================
 echo   InsightOps RDP 采集器 安装
 echo ============================================
+echo  目标地址: %API_URL%/api/v1/rdp/ingest
+echo ============================================
 echo.
 
-:: ---- 读取配置文件 (rdp-collector-config.bat) ----
-if exist "rdp-collector-config.bat" (
-    echo [检测到配置文件，正在读取...]
-    call "rdp-collector-config.bat"
-) else (
-    echo [未找到配置文件，将使用交互输入]
-    echo.
-)
-
-:: ---- 采集 InsightOps 地址 ----
-if "%API_URL%"=="" (
-    set /p API_URL="请输入 InsightOps 地址 (默认 http://10.0.0.10:8000): "
-)
-if "%API_URL%"=="" set API_URL=http://10.0.0.10:8000
-
-:: ---- 采集 API Key ----
-if "%API_KEY%"=="" (
-    set /p API_KEY="请输入 API Key (之前生成的 insightops_rdp_... ): "
-)
-if "%API_KEY%"=="" (
-    echo [错误] API Key 不能为空
-    pause
-    exit /b 1
-)
-
-echo.
 echo [1/4] 正在创建脚本目录...
 if not exist "%ProgramData%\InsightOps" mkdir "%ProgramData%\InsightOps"
 
@@ -50,16 +32,13 @@ echo [2/4] 正在部署采集脚本...
 (
 echo <#
 echo .SYNOPSIS
-echo     InsightOps RDP Event Collector - 自动部署版本
+echo     InsightOps RDP Event Collector
 echo #>
-echo.
 echo param^(^)
 echo     [string]$ApiUrl = "%API_URL%/api/v1/rdp/ingest",
-echo     [string]$ApiKey = "%API_KEY%",
 echo     [int]$MaxEvents = 500,
 echo     [string]$StateFile = "$env:ProgramData\InsightOps\rdp-state.json"
 echo ^)
-echo.
 echo $ErrorActionPreference = "Stop"
 echo.
 echo # ---- 状态管理 ----
@@ -115,8 +94,7 @@ echo $newest = $since
 echo foreach ($e in $events) ^{ $t = [DateTime]::Parse($e.login_at); if ($t -gt $newest) ^{ $newest = $t ^} ^}
 echo $body = @{ events = $events ^} ^| ConvertTo-Json -Depth 3 -Compress
 echo try ^{
-echo     $r = Invoke-RestMethod -Uri $ApiUrl -Method Post -ContentType "application/json" `
-echo         -Headers @{ "X-API-Key" = $ApiKey } -Body $body -TimeoutSec 30
+echo     $r = Invoke-RestMethod -Uri $ApiUrl -Method Post -ContentType "application/json" -Body $body -TimeoutSec 30
 echo     Write-Host "[OK] sent=$($r.received_count) inserted=$($r.inserted_count)"
 echo ^} catch ^{
 echo     Write-Host "[FAIL] $_"
