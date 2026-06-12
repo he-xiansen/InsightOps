@@ -1,44 +1,31 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppShell, type AppNavItem } from "./components/layout/AppShell";
-import { IdleAssetsPage } from "./pages/IdleAssetsPage";
+import { AlertsCenterPage } from "./pages/AlertsCenterPage";
+import { DeviceManagementPage } from "./pages/DeviceManagementPage";
+import { LogAnalysisPage } from "./pages/LogAnalysisPage";
 import { OverviewPage } from "./pages/OverviewPage";
-import { RdpTrendPage } from "./pages/RdpTrendPage";
-import { VmAssetsPage } from "./pages/VmAssetsPage";
+import { SystemSettingsPage } from "./pages/SystemSettingsPage";
 
 const navItems: AppNavItem[] = [
-  {
-    to: "/overview",
-    label: "总览看板",
-    description: "展示关键指标、健康检查和后续模块入口。",
-  },
-  {
-    to: "/rdp-trend",
-    label: "RDP 登录趋势",
-    description: "预留趋势图、筛选器和时间粒度切换区域。",
-  },
-  {
-    to: "/idle-assets",
-    label: "闲置资源清单",
-    description: "承接闲置识别、导出和回收建议的表格页。",
-  },
-  {
-    to: "/vm-assets",
-    label: "虚机基础信息",
-    description: "展示资产属性、所属人和同步状态的占位页面。",
-  },
+  { to: "/dashboard", label: "仪表盘", icon: "dashboard" },
+  { to: "/devices", label: "设备管理", icon: "router" },
+  { to: "/alerts", label: "告警中心", icon: "notifications_active" },
+  { to: "/logs", label: "日志分析", icon: "analytics" },
+  { to: "/settings", label: "系统设置", icon: "settings" },
 ];
 
 export default function App() {
   return (
     <Routes>
       <Route element={<AppShell navItems={navItems} />}>
-        <Route index element={<Navigate to="/overview" replace />} />
-        <Route path="/overview" element={<OverviewPage />} />
-        <Route path="/rdp-trend" element={<RdpTrendPage />} />
-        <Route path="/idle-assets" element={<IdleAssetsPage />} />
-        <Route path="/vm-assets" element={<VmAssetsPage />} />
-        <Route path="*" element={<Navigate to="/overview" replace />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<OverviewPage />} />
+        <Route path="/devices" element={<DeviceManagementPage />} />
+        <Route path="/alerts" element={<AlertsCenterPage />} />
+        <Route path="/logs" element={<LogAnalysisPage />} />
+        <Route path="/settings" element={<SystemSettingsPage />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Route>
     </Routes>
   );
