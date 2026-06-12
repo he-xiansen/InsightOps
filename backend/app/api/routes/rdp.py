@@ -2,8 +2,6 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_session
-from app.core.security import require_api_key
-from app.models.api_key import APIKey
 from app.schemas.rdp_ingest import RdpIngestRequest, RdpIngestResponse
 from app.schemas.rdp_login import RdpLoginListResponse
 from app.schemas.rdp_trend import RDPTrendResponse, TrendGranularity
@@ -38,7 +36,6 @@ def list_rdp_logins(
 def ingest_rdp_events(
     payload: RdpIngestRequest,
     session: Session = Depends(get_session),
-    _: APIKey = Depends(require_api_key),
 ) -> RdpIngestResponse:
     service = RDPIngestService(session)
     result = service.ingest_events([e.model_dump() for e in payload.events])

@@ -1,5 +1,4 @@
-import hashlib
-from datetime import UTC, datetime, timedelta, timezone
+from datetime import UTC, datetime
 from typing import Generator
 
 import pytest
@@ -9,12 +8,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.models import APIKey, VMAsset
+from app.models import VMAsset
 from app.models.base import Base
-
-
-def hash_api_key(raw_value: str) -> str:
-    return hashlib.sha256(raw_value.encode("utf-8")).hexdigest()
 
 
 @pytest.fixture()
@@ -51,26 +46,12 @@ def client(session_factory: sessionmaker[Session]) -> Generator[TestClient, None
     app.dependency_overrides.clear()
 
 
-@pytest.fixture()
-def seeded_session(session_factory: sessionmaker[Session]) -> Generator[Session, None, None]:
-    with session_factory() as session:
-        session.add(APIKey(key_name="test-key", key_hash=hash_api_key("demo-key"), enabled=True))
-        session.add(VMAsset(ip="10.0.0.1", hostname="vm-01", owner="alice"))
-        session.commit()
-        yield session
-
-
-def test_ingest_requires_api_key(client: TestClient) -> None:
+def test_ingest_without_api_key_succeeds(client: TestClient) -> None:
     response = client.post("/api/v1/rdp/ingest", json={"events": []})
-    assert response.status_code == 401
+    assert response.status_code == 200
 
 
-def test_ingest_accepts_rdp_events(client: TestClient, session_factory: sessionmaker[Session]) -> None:
-    # Seed API key
-    with session_factory() as session:
-        session.add(APIKey(key_name="test-key", key_hash=hash_api_key("demo-key"), enabled=True))
-        session.commit()
-
+def test_ingest_accepts_rdp_events(client: TestClient) -> None:
     payload = {
         "events": [
             {
@@ -83,11 +64,7 @@ def test_ingest_accepts_rdp_events(client: TestClient, session_factory: sessionm
         ]
     }
 
-    response = client.post(
-        "/api/v1/rdp/ingest",
-        json=payload,
-        headers={"X-API-Key": "demo-key"},
-    )
+    response = client.post("/api/v1/rdp/ingest", json=payload)
 
     assert response.status_code == 200
     data = response.json()
@@ -96,11 +73,7 @@ def test_ingest_accepts_rdp_events(client: TestClient, session_factory: sessionm
     assert data["inserted_count"] == 1
 
 
-def test_ingest_deduplicates_events(client: TestClient, session_factory: sessionmaker[Session]) -> None:
-    with session_factory() as session:
-        session.add(APIKey(key_name="test-key", key_hash=hash_api_key("demo-key"), enabled=True))
-        session.commit()
-
+def test_ingest_deduplicates_events(client: TestClient) -> None:
     event = {
         "event_id": 4624,
         "logon_type": 10,
@@ -110,10 +83,10 @@ def test_ingest_deduplicates_events(client: TestClient, session_factory: session
     }
 
     # First request
-    r1 = client.post("/api/v1/rdp/ingest", json={"events": [event]}, headers={"X-API-Key": "demo-key"})
+    r1 = client.post("/api/v1/rdp/ingest", json={"events": [event]})
     assert r1.json()["inserted_count"] == 1
 
     # Second request (same event)
-    r2 = client.post("/api/v1/rdp/ingest", json={"events": [event]}, headers={"X-API-Key": "demo-key"})
+    r2 = client.post("/api/v1/rdp/ingest", json={"events": [event]})
     assert r2.json()["inserted_count"] == 0
     assert r2.json()["existing_count"] == 1
