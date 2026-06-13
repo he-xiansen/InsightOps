@@ -57,7 +57,7 @@ function Get-RdpEvents($since) {
         $xml = [xml]$evt.ToXml()
         $ip   = ($xml.Event.EventData.Data | Where-Object { $_.Name -eq "IpAddress" })."#text"
         $user = ($xml.Event.EventData.Data | Where-Object { $_.Name -eq "TargetUserName" })."#text"
-        if (-not $ip -or $ip -eq "::1" -or $ip -eq "127.0.0.1" -or $ip -eq "-") { continue }
+        if (-not $ip -or $ip -eq "-") { continue }
         $results += @{ event_id=4624; logon_type=10; ip=$ip; username=$user; login_at=$evt.TimeCreated.ToString("o") }
     }
     return $results
