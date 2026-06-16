@@ -91,7 +91,6 @@ class IdleAnalysisService:
                     idle_days=snapshot.idle_days,
                     owner=snapshot.owner,
                     department=snapshot.department,
-                    lab=snapshot.lab,
                     recycle_level=snapshot.recycle_level,
                     reason=snapshot.reason,
                     last_rdp_login_at=snapshot.last_rdp_login_at,
@@ -119,8 +118,7 @@ class IdleAnalysisService:
                 "idle_days": idle_level.idle_days,
                 "owner": asset.owner,
                 "department": asset.department,
-                "lab": asset.lab,
-                "recycle_level": idle_level.recycle_level,
+                                "recycle_level": idle_level.recycle_level,
                 "reason": f"连续 {idle_level.idle_days} 天未发生 RDP 登录",
                 "last_rdp_login_at": asset.last_rdp_login_at,
             }
@@ -140,8 +138,7 @@ class IdleAnalysisService:
             "idle_days": idle_level.idle_days,
             "owner": asset.owner,
             "department": asset.department,
-            "lab": asset.lab,
-            "recycle_level": idle_level.recycle_level,
+                        "recycle_level": idle_level.recycle_level,
             "reason": "自纳管以来未登录",
             "last_rdp_login_at": None,
         }

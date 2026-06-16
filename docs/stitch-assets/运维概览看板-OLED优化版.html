@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>InsightOps Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #09090b;
+            color: #e5e1e4;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .micro-border {
+            border: 0.5px solid hsla(217, 32%, 60%, 0.08);
+        }
+        .glass-panel {
+            background-color: hsl(224 44% 11%);
+            backdrop-filter: blur(20px);
+        }
+        .tabular-nums {
+            font-variant-numeric: tabular-nums;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #353437;
+            border-radius: 2px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#c2c6d6",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#0e0e10",
+                        "primary-fixed": "#d8e2ff",
+                        "surface": "#131315",
+                        "on-secondary-fixed": "#0b1c30",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "on-error-container": "#ffdad6",
+                        "secondary": "#b7c8e1",
+                        "inverse-primary": "#005ac2",
+                        "on-surface": "#e5e1e4",
+                        "on-tertiary-container": "#461f00",
+                        "on-secondary-container": "#a9bad3",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "inverse-surface": "#e5e1e4",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "surface-variant": "#353437",
+                        "outline-variant": "#424754",
+                        "surface-tint": "#adc6ff",
+                        "tertiary-container": "#df7412",
+                        "on-background": "#e5e1e4",
+                        "outline": "#8c909f",
+                        "inverse-on-surface": "#313032",
+                        "surface-container-low": "#1c1b1d",
+                        "on-tertiary": "#502400",
+                        "surface-dim": "#131315",
+                        "on-tertiary-fixed": "#311400",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-container-high": "#2a2a2c",
+                        "primary-fixed-dim": "#adc6ff",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "primary": "#adc6ff",
+                        "tertiary-fixed": "#ffdcc6",
+                        "background": "#131315",
+                        "surface-container-highest": "#353437",
+                        "tertiary": "#ffb786",
+                        "on-secondary": "#213145",
+                        "surface-container": "#201f22",
+                        "on-primary-fixed": "#001a42",
+                        "secondary-container": "#3a4a5f",
+                        "primary-container": "#4d8eff",
+                        "surface-bright": "#39393b",
+                        "on-primary": "#002e6a",
+                        "error": "#ffb4ab",
+                        "on-primary-fixed-variant": "#004395",
+                        "on-primary-container": "#00285d",
+                        "on-error": "#690005"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-padding": "24px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "unit": "4px",
+                        "gutter": "16px",
+                        "stack-lg": "32px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "data-mono": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "display": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", {"lineHeight": "1.5", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "1.7", "fontWeight": "400"}],
+                        "data-mono": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["28px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "display": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface">
+<!-- SideNavBar Shell -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-surface border-r border-outline-variant flex flex-col z-[60]">
+<!-- Brand Header -->
+<div class="px-6 py-8">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-xl">insights</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface leading-tight">InsightOps</h1>
+<p class="font-label-md text-label-md text-on-surface-variant opacity-70">Infrastructure Monitoring</p>
+</div>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 px-4 space-y-1">
+<!-- Active Tab: Dashboard -->
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container border-l-4 border-primary transition-opacity active:opacity-85" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">仪表盘</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-white/[0.04] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">router</span>
+<span class="font-body-md text-body-md">设备管理</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-white/[0.04] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">notifications_active</span>
+<span class="font-body-md text-body-md">告警中心</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-white/[0.04] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md text-body-md">日志分析</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-white/[0.04] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">系统设置</span>
+</a>
+</nav>
+<!-- Footer Actions -->
+<div class="px-4 py-6 border-t border-outline-variant space-y-1">
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-white/[0.04] transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">帮助中心</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-white/[0.04] transition-colors" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-label-md text-label-md">个人中心</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 min-h-screen flex flex-col">
+<!-- TopNavBar Shell -->
+<header class="sticky top-0 z-50 h-16 bg-surface border-b border-outline-variant flex justify-between items-center px-container-padding">
+<div class="flex items-center gap-4">
+<div class="flex items-center bg-surface-container px-3 py-1.5 rounded micro-border gap-2">
+<span class="material-symbols-outlined text-sm text-primary">health_and_safety</span>
+<span class="font-label-md text-label-md text-primary">系统健康状况: 良好</span>
+</div>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-lg">schedule</span>
+<span class="font-data-mono text-data-mono tabular-nums">2024-05-24 14:32:01</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<button class="p-2 rounded hover:bg-white/[0.04] transition-all active:scale-95 text-on-surface-variant">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full border border-surface"></span>
+</div>
+<button class="p-2 rounded hover:bg-white/[0.04] transition-all active:scale-95 text-on-surface-variant">
+<span class="material-symbols-outlined">apps</span>
+</button>
+<div class="flex items-center gap-3 pl-2 border-l border-outline-variant">
+<span class="font-label-md text-label-md font-bold text-primary">Admin</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20">
+<img alt="Admin Avatar" class="w-full h-full object-cover" data-alt="A professional close-up portrait of a tech administrator in a dimly lit, high-tech server room environment. The lighting is cold blue and cyan, reflecting off glass surfaces. The person is wearing minimalist glasses and a dark tech-fleece. The overall atmosphere is futuristic, clean, and highly focused, emphasizing a sense of expert oversight and infrastructure reliability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAa86ozPVmLoQnXWTi0nIe774YSJKzRw9CGM2H9Nw4aIkoYFRJxQFykImexkdUSGEAIq3gF0Ro61XarH0bU9wP7ZSEORSn4YJVZ2x97-tgbYhCHbf4btHh9GGVkInsVMln-KFQEDCw8let9nbvmwdxy0dvsPtjzpXekGlEsPDTwjeLjQOcFsxaABC4oghb8-DlzV0ZqnfcGsVBINiwa69Dt1ilfmZy6TIv9zWLvgwPM9XuXAI_pDCLiRw7ThqZP86HaB_mdp2Bc4w"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Dashboard Canvas -->
+<div class="p-container-padding space-y-gutter">
+<!-- 1. KPI Cards Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
+<!-- CPU Usage -->
+<div class="glass-panel micro-border p-5 rounded flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">CPU 使用率</span>
+<span class="material-symbols-outlined text-primary text-xl">memory</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-display text-display tabular-nums">24.8%</span>
+<span class="font-label-md text-label-md text-primary">+1.2%</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 24.8%"></div>
+</div>
+</div>
+<!-- Memory Load -->
+<div class="glass-panel micro-border p-5 rounded flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">内存负载</span>
+<span class="material-symbols-outlined text-primary text-xl">developer_board</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-display text-display tabular-nums">62.1%</span>
+<span class="font-label-md text-label-md text-error-container">-2.4%</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-tertiary" style="width: 62.1%"></div>
+</div>
+</div>
+<!-- Network Traffic -->
+<div class="glass-panel micro-border p-5 rounded flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">网络流量</span>
+<span class="material-symbols-outlined text-primary text-xl">swap_calls</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-display text-display tabular-nums">1.2 <small class="text-lg">Gb/s</small></span>
+<span class="font-label-md text-label-md text-primary">+0.4</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary" style="width: 45%"></div>
+</div>
+</div>
+<!-- Alerts Count -->
+<div class="glass-panel micro-border p-5 rounded flex flex-col justify-between h-32">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface-variant">告警总数</span>
+<span class="material-symbols-outlined text-error text-xl">warning</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-display text-display tabular-nums">04</span>
+<span class="font-label-md text-label-md text-on-surface-variant opacity-50">活跃中</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-error" style="width: 15%"></div>
+</div>
+</div>
+</section>
+<!-- 2. Central Chart -->
+<section class="glass-panel micro-border rounded p-6">
+<div class="flex justify-between items-center mb-8">
+<div>
+<h2 class="font-headline-md text-headline-md">系统资源趋势</h2>
+<p class="font-label-md text-label-md text-on-surface-variant">实时监测 24 小时内的资源利用率</p>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1 rounded bg-white/[0.04] text-label-md border border-outline-variant">1小时</button>
+<button class="px-3 py-1 rounded bg-primary/10 text-primary text-label-md border border-primary/20">24小时</button>
+<button class="px-3 py-1 rounded bg-white/[0.04] text-label-md border border-outline-variant">7天</button>
+</div>
+</div>
+<div class="relative h-[320px] w-full">
+<!-- SVG Chart Background Grid -->
+<svg class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<lineargradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="rgba(173, 198, 255, 0.1)"></stop>
+<stop offset="100%" stop-color="rgba(173, 198, 255, 0)"></stop>
+</lineargradient>
+</defs>
+<!-- Grid Lines -->
+<g stroke="hsla(217, 32%, 60%, 0.06)" stroke-width="1">
+<line x1="0" x2="100%" y1="20%" y2="20%"></line>
+<line x1="0" x2="100%" y1="40%" y2="40%"></line>
+<line x1="0" x2="100%" y1="60%" y2="60%"></line>
+<line x1="0" x2="100%" y1="80%" y2="80%"></line>
+<line x1="20%" x2="20%" y1="0" y2="100%"></line>
+<line x1="40%" x2="40%" y1="0" y2="100%"></line>
+<line x1="60%" x2="60%" y1="0" y2="100%"></line>
+<line x1="80%" x2="80%" y1="0" y2="100%"></line>
+</g>
+<!-- Data Line -->
+<path d="M0 240 Q 50 200, 100 220 T 200 150 T 300 180 T 400 100 T 500 130 T 600 80 T 700 110 T 800 50 T 900 90 L 1000 70 V 320 H 0 Z" fill="url(#chartGradient)"></path>
+<path d="M0 240 Q 50 200, 100 220 T 200 150 T 300 180 T 400 100 T 500 130 T 600 80 T 700 110 T 800 50 T 900 90 L 1000 70" fill="none" stroke="#adc6ff" stroke-opacity="0.85" stroke-width="2"></path>
+<!-- Tooltip Pointer -->
+<circle cx="600" cy="80" fill="#adc6ff" r="4"></circle>
+<line stroke="#adc6ff" stroke-dasharray="4" stroke-opacity="0.3" stroke-width="1" x1="600" x2="600" y1="0" y2="320"></line>
+</svg>
+<!-- Floating Tooltip -->
+<div class="absolute left-[610px] top-[40px] glass-panel micro-border px-3 py-2 rounded-lg backdrop-blur-xl z-10">
+<div class="text-label-md text-on-surface-variant mb-1">14:00</div>
+<div class="text-body-md font-bold text-primary">CPU: 42.5%</div>
+</div>
+</div>
+</section>
+<!-- 3. Bottom Data Panels -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<!-- Latest Alerts -->
+<div class="glass-panel micro-border rounded overflow-hidden">
+<div class="p-4 border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md flex items-center gap-2">
+<span class="material-symbols-outlined text-error">campaign</span>
+                            最新告警
+                        </h3>
+<button class="text-label-md text-primary hover:underline">查看全部</button>
+</div>
+<div class="divide-y divide-outline-variant">
+<div class="p-4 flex items-center gap-4 hover:bg-white/[0.04] transition-colors group">
+<div class="w-2 h-2 rounded-full bg-error shrink-0"></div>
+<div class="flex-1">
+<p class="text-body-md font-medium">DB_Replica_02 响应延迟过高</p>
+<p class="text-label-md text-on-surface-variant">Cluster-Main • 5分钟前</p>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-error/10 text-error-container border border-error/20">Critical</span>
+</div>
+<div class="p-4 flex items-center gap-4 hover:bg-white/[0.04] transition-colors group">
+<div class="w-2 h-2 rounded-full bg-tertiary shrink-0"></div>
+<div class="flex-1">
+<p class="text-body-md font-medium">Node_Web_Edge 内存占用异常 (85%)</p>
+<p class="text-label-md text-on-surface-variant">Region-East-1 • 12分钟前</p>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-tertiary-container/10 text-tertiary-fixed-dim border border-tertiary/20">Warning</span>
+</div>
+<div class="p-4 flex items-center gap-4 hover:bg-white/[0.04] transition-colors group">
+<div class="w-2 h-2 rounded-full bg-tertiary shrink-0"></div>
+<div class="flex-1">
+<p class="text-body-md font-medium">SSL 证书将于 7 天后到期</p>
+<p class="text-label-md text-on-surface-variant">Domain-Portal • 1小时前</p>
+</div>
+<span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-tertiary-container/10 text-tertiary-fixed-dim border border-tertiary/20">Warning</span>
+</div>
+</div>
+</div>
+<!-- Device Status Table -->
+<div class="glass-panel micro-border rounded overflow-hidden">
+<div class="p-4 border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">hub</span>
+                            设备连接状态
+                        </h3>
+<div class="flex items-center gap-2">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full bg-primary/20 border border-primary/40"></div>
+<div class="w-6 h-6 rounded-full bg-secondary/20 border border-secondary/40"></div>
+<div class="w-6 h-6 rounded-full bg-surface-variant border border-outline-variant"></div>
+</div>
+<span class="text-label-md text-on-surface-variant tabular-nums">243 在线</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-white/[0.02] border-b border-outline-variant">
+<tr>
+<th class="px-4 py-3 font-label-md text-label-md text-on-surface-variant">设备 ID</th>
+<th class="px-4 py-3 font-label-md text-label-md text-on-surface-variant">地理位置</th>
+<th class="px-4 py-3 font-label-md text-label-md text-on-surface-variant">延迟 (ms)</th>
+<th class="px-4 py-3 font-label-md text-label-md text-on-surface-variant">状态</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30 font-data-mono text-data-mono">
+<tr class="hover:bg-white/[0.04] transition-colors leading-7">
+<td class="px-4 py-3 tabular-nums">SRV-CN-BJ-01</td>
+<td class="px-4 py-3 text-on-surface-variant">Beijing, CN</td>
+<td class="px-4 py-3 tabular-nums text-primary">12ms</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="text-label-md">Connected</span>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.04] transition-colors leading-7">
+<td class="px-4 py-3 tabular-nums">SRV-US-OR-22</td>
+<td class="px-4 py-3 text-on-surface-variant">Oregon, US</td>
+<td class="px-4 py-3 tabular-nums text-primary">156ms</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="text-label-md">Connected</span>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.04] transition-colors leading-7">
+<td class="px-4 py-3 tabular-nums">SRV-EU-FRA-08</td>
+<td class="px-4 py-3 text-on-surface-variant">Frankfurt, DE</td>
+<td class="px-4 py-3 tabular-nums text-error">--</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+<span class="text-label-md text-outline">Offline</span>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-white/[0.04] transition-colors leading-7">
+<td class="px-4 py-3 tabular-nums">SRV-AP-SG-14</td>
+<td class="px-4 py-3 text-on-surface-variant">Singapore, SG</td>
+<td class="px-4 py-3 tabular-nums text-primary">42ms</td>
+<td class="px-4 py-3">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="text-label-md">Connected</span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</div>
+</main>
+<script>
+        // Micro-interaction for KPI cards
+        document.querySelectorAll('.glass-panel').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.borderColor = 'hsla(217, 32%, 60%, 0.2)';
+                card.style.transition = 'border-color 0.3s ease';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.borderColor = 'hsla(217, 32%, 60%, 0.08)';
+            });
+        });
+
+        // Simple real-time clock update for the top bar
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toISOString().replace('T', ' ').substring(0, 19);
+            const clockEl = document.querySelector('.font-data-mono.tabular-nums');
+            if(clockEl) clockEl.textContent = timeStr;
+        }
+        setInterval(updateClock, 1000);
+    </script>
+</body></html>

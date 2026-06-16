@@ -1,5 +1,5 @@
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.models.vm_rdp_login import VMRdpLogin
@@ -31,3 +31,20 @@ class VMRdpLoginRepository:
             return False, existing
 
         return True, login
+
+    def list_recent(self, limit: int = 50, offset: int = 0) -> list[VMRdpLogin]:
+        from sqlalchemy import select
+
+        statement = (
+            select(VMRdpLogin)
+            .order_by(VMRdpLogin.login_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return list(self.session.scalars(statement))
+
+    def count_all(self) -> int:
+        from sqlalchemy import select, func
+
+        statement = select(func.count()).select_from(VMRdpLogin)
+        return self.session.scalar(statement) or 0

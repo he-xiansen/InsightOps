@@ -1,0 +1,130 @@
+<h2>InsightOps 一期架构方向</h2>
+<p class="subtitle">目标聚焦：配置化 Zabbix 数据接入 + 独立 MySQL 业务库 + Windows 安全日志 RDP 采集 + 虚机基础信息 API</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. 单体后端优先</div>
+        <div class="mockup-body">
+          <div class="mock-nav">FastAPI Monolith</div>
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <div class="mock-sidebar" style="flex:1;">Zabbix Reader</div>
+            <div class="mock-content" style="flex:1;">RDP Ingest API</div>
+          </div>
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <div class="mock-sidebar" style="flex:1;">VM Asset API</div>
+            <div class="mock-content" style="flex:1;">Idle Analyzer</div>
+          </div>
+          <div class="placeholder" style="margin-top:12px;">Project MySQL</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案 A：单体后端优先</h3>
+      <p>一个 FastAPI 服务统一承载 Zabbix 读取、RDP 接入、资产管理和分析能力，最利于一期快速落地。</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>优点</h4>
+          <ul>
+            <li>开发和部署最简单</li>
+            <li>最适合当前仓库从 0 到 1 演进</li>
+            <li>接口和数据模型容易统一</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>缺点</h4>
+          <ul>
+            <li>后续拆分采集服务需要重构</li>
+            <li>采集和查询耦合更高</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. API 与采集分离</div>
+        <div class="mockup-body">
+          <div class="mock-nav">FastAPI API Service</div>
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <div class="mock-content" style="flex:1;">VM Asset API</div>
+            <div class="mock-content" style="flex:1;">Dashboard API</div>
+          </div>
+          <div class="placeholder" style="margin-top:12px;">Project MySQL</div>
+          <div class="mock-nav" style="margin-top:12px;">Collector Service</div>
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <div class="mock-sidebar" style="flex:1;">Zabbix Reader Job</div>
+            <div class="mock-sidebar" style="flex:1;">Windows Event Ingest</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案 B：API 与采集分离</h3>
+      <p>查询接口和定时采集分为两个进程或两个服务，共享同一业务库，适合后续扩展为稳定平台。</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>优点</h4>
+          <ul>
+            <li>边界清晰，便于扩展</li>
+            <li>采集任务不会阻塞 API</li>
+            <li>后续接多数据源更自然</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>缺点</h4>
+          <ul>
+            <li>编排和配置更复杂</li>
+            <li>一期工作量高于单体</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. 数据仓层优先</div>
+        <div class="mockup-body">
+          <div class="mock-nav">ETL / Sync Layer</div>
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <div class="mock-sidebar" style="flex:1;">Zabbix Sync</div>
+            <div class="mock-sidebar" style="flex:1;">RDP Sync</div>
+          </div>
+          <div class="placeholder" style="margin-top:12px;">Fact / Dim Tables</div>
+          <div class="mock-nav" style="margin-top:12px;">FastAPI Read Only</div>
+          <div class="mock-content" style="margin-top:12px;">Board / Export / Report API</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案 C：数据仓层优先</h3>
+      <p>先围绕事实表和维表做同步与聚合，API 主要读汇总结果，适合报表强但一期建设成本最高。</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>优点</h4>
+          <ul>
+            <li>报表与分析能力最强</li>
+            <li>后续指标统一性最好</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>缺点</h4>
+          <ul>
+            <li>建模复杂度最高</li>
+            <li>对一期快速上线不友好</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <p class="subtitle">我的推荐：<strong>方案 B</strong>。它比方案 A 更利于后续接入前端看板、闲置分析和多种采集器，但又没有方案 C 那么重。</p>
+  <p class="subtitle">请你看一下，更偏向哪一种。如果愿意，可以直接点击卡片进行选择。</p>
+</div>

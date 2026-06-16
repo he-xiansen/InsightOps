@@ -7,8 +7,9 @@ class VMAssetUpsertItem(BaseModel):
     ip: str
     hostname: str | None = None
     department: str | None = None
-    lab: str | None = None
     owner: str | None = None
+    phone: str | None = None
+    mobile: str | None = None
     os_type: str | None = None
     status: str = "active"
     last_rdp_login_at: datetime | None = None
@@ -38,11 +39,19 @@ class VMAssetListItem(BaseModel):
     ip: str
     hostname: str | None = None
     department: str | None = None
-    lab: str | None = None
     owner: str | None = None
+    phone: str | None = None
+    mobile: str | None = None
     os_type: str | None = None
     status: str
     last_rdp_login_at: datetime | None = None
+
+
+class VMAssetPerfItem(VMAssetListItem):
+    idle_days: int = -1
+    cpu_avg: float | None = None
+    mem_avg: float | None = None
+    recommendation: str = "保留"
 
 
 class VMAssetListResponse(BaseModel):
@@ -63,3 +72,6 @@ class IdleVMListItem(BaseModel):
 
 class IdleVMListResponse(BaseModel):
     items: list[IdleVMListItem] = Field(default_factory=list)
+
+class VMAssetPerfListResponse(BaseModel):
+    items: list[VMAssetPerfItem] = Field(default_factory=list)

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { toBeijingTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getIdleExportUrl, getIdleSnapshots } from "@/lib/api";
@@ -9,7 +10,6 @@ type AlertItem = {
   idle_days: number;
   owner: string | null;
   department: string | null;
-  lab: string | null;
   recycle_level: string;
   last_rdp_login_at: string | null;
 };
@@ -70,7 +70,7 @@ export function AlertsCenterPage() {
                   {item.recycle_level === "high" ? "（高优先级回收）" : "（低优先级回收）"}
                 </p>
                 <p className="text-label-md text-on-surface-variant truncate">
-                  {item.department ?? "--"} · {item.owner ?? "--"} · 最后登录: {item.last_rdp_login_at ?? "从未登录"}
+                  {item.department ?? "--"} · {item.owner ?? "--"} · 最后登录: {toBeijingTime(item.last_rdp_login_at)}
                 </p>
               </div>
               <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider ${

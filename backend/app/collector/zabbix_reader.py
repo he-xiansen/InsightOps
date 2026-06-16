@@ -2,7 +2,7 @@ from sqlalchemy import Engine, text
 
 
 HOST_SYNC_SQL = """
-SELECT h.hostid, h.host, i.ip, h.available
+SELECT h.hostid, h.host, i.ip, i.available
 FROM hosts AS h
 JOIN interface AS i ON i.hostid = h.hostid
 WHERE h.status IN (0, 1)

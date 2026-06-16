@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { toBeijingTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -58,7 +59,7 @@ export function LogAnalysisPage() {
                   <TableRow key={item.id}>
                     <TableCell className="font-mono tabular-nums">{item.ip}</TableCell>
                     <TableCell>{item.username ?? "--"}</TableCell>
-                    <TableCell className="text-on-surface-variant">{item.login_at}</TableCell>
+                    <TableCell className="text-on-surface-variant">{toBeijingTime(item.login_at)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

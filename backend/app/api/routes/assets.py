@@ -7,6 +7,7 @@ from app.schemas.vm_asset import (
     BulkUpsertVMAssetsRequest,
     BulkUpsertVMAssetsResponse,
     VMAssetListResponse,
+    VMAssetPerfListResponse,
 )
 from app.services.vm_asset_service import VMAssetService
 
@@ -28,3 +29,12 @@ def bulk_upsert_assets(
 ) -> BulkUpsertVMAssetsResponse:
     service = VMAssetService(session)
     return service.bulk_upsert(payload)
+
+
+@router.get("/perf", response_model=VMAssetPerfListResponse)
+def list_assets_with_perf(
+    session: Session = Depends(get_session),
+) -> VMAssetPerfListResponse:
+    """返回带闲置天数和性能评估的资产列表"""
+    service = VMAssetService(session)
+    return service.list_assets_with_perf()

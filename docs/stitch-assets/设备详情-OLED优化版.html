@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#c2c6d6",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#0e0e10",
+                        "primary-fixed": "#d8e2ff",
+                        "surface": "#131315",
+                        "on-secondary-fixed": "#0b1c30",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "on-error-container": "#ffdad6",
+                        "secondary": "#b7c8e1",
+                        "inverse-primary": "#005ac2",
+                        "on-surface": "#e5e1e4",
+                        "on-tertiary-container": "#461f00",
+                        "on-secondary-container": "#a9bad3",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "inverse-surface": "#e5e1e4",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "surface-variant": "#353437",
+                        "outline-variant": "#424754",
+                        "surface-tint": "#adc6ff",
+                        "tertiary-container": "#df7412",
+                        "on-background": "#e5e1e4",
+                        "outline": "#8c909f",
+                        "inverse-on-surface": "#313032",
+                        "surface-container-low": "#1c1b1d",
+                        "on-tertiary": "#502400",
+                        "surface-dim": "#131315",
+                        "on-tertiary-fixed": "#311400",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-container-high": "#2a2a2c",
+                        "primary-fixed-dim": "#adc6ff",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "primary": "#adc6ff",
+                        "tertiary-fixed": "#ffdcc6",
+                        "background": "#131315",
+                        "surface-container-highest": "#353437",
+                        "tertiary": "#ffb786",
+                        "on-secondary": "#213145",
+                        "surface-container": "#201f22",
+                        "on-primary-fixed": "#001a42",
+                        "secondary-container": "#3a4a5f",
+                        "primary-container": "#4d8eff",
+                        "surface-bright": "#39393b",
+                        "on-primary": "#002e6a",
+                        "error": "#ffb4ab",
+                        "on-primary-fixed-variant": "#004395",
+                        "on-primary-container": "#00285d",
+                        "on-error": "#690005"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-padding": "24px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "unit": "4px",
+                        "gutter": "16px",
+                        "stack-lg": "32px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "data-mono": ["JetBrains Mono", "monospace"],
+                        "headline-lg": ["Inter"],
+                        "display": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", {"lineHeight": "1.5", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["20px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "1.7", "fontWeight": "400"}],
+                        "data-mono": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-lg": ["28px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "display": ["36px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #09090b;
+            color: #e5e1e4;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .micro-border {
+            border: 0.5px solid hsla(217, 32%, 60%, 0.08);
+        }
+        .glass-panel {
+            background-color: hsl(224 44% 11%);
+            backdrop-filter: blur(12px);
+        }
+        .log-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .log-scroll::-webkit-scrollbar-track {
+            background: #09090b;
+        }
+        .log-scroll::-webkit-scrollbar-thumb {
+            background: #353437;
+            border-radius: 2px;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+            font-size: 1.25rem;
+        }
+        .ghost-button {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .ghost-button:hover {
+            background-color: rgba(173, 198, 255, 0.15);
+        }
+    </style>
+</head>
+<body class="flex min-h-screen overflow-hidden">
+<!-- Shared SideNavBar -->
+<aside class="fixed left-0 top-0 h-full flex flex-col h-screen w-64 border-r border-outline-variant bg-surface z-50">
+<div class="p-6 flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary">insights</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface leading-tight">InsightOps</h1>
+<p class="text-[10px] uppercase tracking-wider text-outline">Infrastructure Monitoring</p>
+</div>
+</div>
+<nav class="flex-1 px-4 py-6 space-y-2">
+<a class="flex items-center gap-3 px-4 py-2.5 font-body-md text-body-md text-on-surface-variant hover:bg-white/[0.04] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>仪表盘</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 font-body-md text-body-md bg-primary-container text-on-primary-container border-l-4 border-primary transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">router</span>
+<span>设备管理</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 font-body-md text-body-md text-on-surface-variant hover:bg-white/[0.04] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">notifications_active</span>
+<span>告警中心</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 font-body-md text-body-md text-on-surface-variant hover:bg-white/[0.04] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>日志分析</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 font-body-md text-body-md text-on-surface-variant hover:bg-white/[0.04] transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>系统设置</span>
+</a>
+</nav>
+<div class="p-4 border-t border-outline-variant">
+<a class="flex items-center gap-3 px-4 py-2.5 font-body-md text-body-md text-on-surface-variant hover:bg-white/[0.04]" href="#">
+<span class="material-symbols-outlined">help</span>
+<span>帮助中心</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2.5 font-body-md text-body-md text-on-surface-variant hover:bg-white/[0.04]" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span>个人中心</span>
+</a>
+</div>
+</aside>
+<main class="flex-1 ml-64 flex flex-col h-screen overflow-y-auto">
+<!-- TopNavBar -->
+<header class="sticky top-0 z-40 flex justify-between items-center px-container-padding w-full h-16 border-b border-outline-variant bg-surface/80 backdrop-blur-md">
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<h2 class="font-headline-md text-headline-md font-bold text-primary">InsightOps / Device Details</h2>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer">health_and_safety</span>
+<div class="relative">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer">notifications</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-error rounded-full"></span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer">apps</span>
+</div>
+<div class="h-8 w-[1px] bg-outline-variant"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="font-label-md text-label-md text-on-surface">Admin User</p>
+<p class="text-[10px] text-on-surface-variant">System Administrator</p>
+</div>
+<img alt="User Avatar" class="w-8 h-8 rounded-full border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1lWvIm85ek_RlpshWdFP6hPZd9qcVgVG0Gx6UtRRjQ3sZkZVdzNvNhpPcttzk4DGOMet_GHuwCajDe-TS9S54-Bf-Q1PkmQwFz1Vpm_LoaUjxDDLX4CfCOVRezrbebkCiNHMkFbvoY3UWHDFFlbV9laEnK8JhQp2lrV5Qh3DxIXM3LL_iOW4xAi5zIv8nlzZXsdchx00RRbJNn-nP9fNYVG_upOZyatUjEGj9LSq8e1Xwaq0NH3VItuIZbs-dWmpQEhY6uiQZjw"/>
+</div>
+</div>
+</header>
+<!-- Content Area -->
+<div class="p-container-padding space-y-stack-lg max-w-7xl mx-auto w-full">
+<!-- Device Header Info -->
+<section class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<div class="md:col-span-8 glass-panel micro-border p-6 rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded tracking-widest uppercase">Active</span>
+<h3 class="font-display text-[24px] font-bold text-on-surface">Edge-Node-Tokyo-04</h3>
+</div>
+<p class="font-body-md text-on-surface-variant">UUID: 8f2c-4b12-9e3d-a5f1c2d3e4f5 • IP: 192.168.1.104</p>
+</div>
+<div class="flex gap-2">
+<button class="ghost-button border border-outline-variant px-4 py-2 rounded font-label-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined">refresh</span> 重启
+                            </button>
+<button class="ghost-button border border-outline-variant px-4 py-2 rounded font-label-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined">terminal</span> 远程终端
+                            </button>
+<button class="bg-primary hover:opacity-85 text-on-primary px-4 py-2 rounded font-label-md flex items-center gap-2 transition-all">
+<span class="material-symbols-outlined">edit</span> 编辑配置
+                            </button>
+</div>
+</div>
+<div class="grid grid-cols-4 gap-4 mt-8">
+<div class="space-y-1">
+<p class="text-[10px] text-outline uppercase font-bold">CPU Usage</p>
+<p class="font-headline-md text-primary">24.5%</p>
+</div>
+<div class="space-y-1">
+<p class="text-[10px] text-outline uppercase font-bold">Memory</p>
+<p class="font-headline-md text-primary">12.8 / 32 GB</p>
+</div>
+<div class="space-y-1">
+<p class="text-[10px] text-outline uppercase font-bold">Uptime</p>
+<p class="font-headline-md text-primary">14d 6h 22m</p>
+</div>
+<div class="space-y-1">
+<p class="text-[10px] text-outline uppercase font-bold">Region</p>
+<p class="font-headline-md text-primary">ap-northeast-1</p>
+</div>
+</div>
+</div>
+<div class="md:col-span-4 glass-panel micro-border p-6 rounded-lg relative overflow-hidden group">
+<div class="absolute inset-0 opacity-20 pointer-events-none">
+<!-- Background decoration representing hardware -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl rounded-full translate-x-10 -translate-y-10 group-hover:bg-primary/30 transition-all duration-500"></div>
+</div>
+<h4 class="text-[10px] text-outline uppercase font-bold mb-4">Hardware Health</h4>
+<ul class="space-y-4 relative z-10">
+<li class="flex items-center justify-between">
+<span class="font-body-md text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">thermostat</span> Temp
+                            </span>
+<span class="font-data-mono text-on-surface">42°C</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="font-body-md text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">parking_meter</span> Fan Speed
+                            </span>
+<span class="font-data-mono text-on-surface">2400 RPM</span>
+</li>
+<li class="flex items-center justify-between">
+<span class="font-body-md text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">bolt</span> Power
+                            </span>
+<span class="font-data-mono text-on-surface">85.2 W</span>
+</li>
+</ul>
+<div class="mt-6 pt-6 border-t border-outline-variant/30">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+<span class="text-[10px] text-primary font-bold uppercase tracking-widest">Hardware nominal</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Tab Switching System -->
+<section class="w-full" x-data="{ activeTab: 'monitoring' }">
+<div class="flex gap-8 border-b border-outline-variant mb-6">
+<button :class="activeTab === 'overview' ? 'text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-on-surface'" @click="activeTab = 'overview'" class="pb-4 font-label-md text-label-md transition-all">概览</button>
+<button :class="activeTab === 'monitoring' ? 'text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-on-surface'" @click="activeTab = 'monitoring'" class="pb-4 font-label-md text-label-md transition-all">监控</button>
+<button :class="activeTab === 'logs' ? 'text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-on-surface'" @click="activeTab = 'logs'" class="pb-4 font-label-md text-label-md transition-all">日志</button>
+<button :class="activeTab === 'config' ? 'text-primary border-b-2 border-primary' : 'text-on-surface-variant hover:text-on-surface'" @click="activeTab = 'config'" class="pb-4 font-label-md text-label-md transition-all">配置</button>
+</div>
+<div class="min-h-[500px]">
+<!-- Monitoring Tab (Bento Grid with Sparklines) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter animate-in fade-in duration-500" x-show="activeTab === 'monitoring'">
+<!-- Metric Card 1 -->
+<div class="glass-panel micro-border p-6 rounded-lg space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-[10px] text-outline uppercase font-bold">Network Inbound</span>
+<span class="font-data-mono text-primary text-xs">1.2 MB/s</span>
+</div>
+<div class="h-24 w-full relative overflow-hidden">
+<svg class="w-full h-full stroke-primary fill-none opacity-85" viewbox="0 0 100 30">
+<path d="M0,15 Q10,5 20,20 T40,10 T60,25 T80,15 T100,20" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+<!-- Metric Card 2 -->
+<div class="glass-panel micro-border p-6 rounded-lg space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-[10px] text-outline uppercase font-bold">Storage I/O</span>
+<span class="font-data-mono text-primary text-xs">450 IOPS</span>
+</div>
+<div class="h-24 w-full relative overflow-hidden">
+<svg class="w-full h-full stroke-tertiary fill-none opacity-85" viewbox="0 0 100 30">
+<path d="M0,25 L10,22 L20,28 L30,10 L40,15 L50,5 L60,12 L70,8 L80,20 L90,15 L100,18" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+<!-- Metric Card 3 -->
+<div class="glass-panel micro-border p-6 rounded-lg space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-[10px] text-outline uppercase font-bold">Load Average</span>
+<span class="font-data-mono text-primary text-xs">0.82 / 1m</span>
+</div>
+<div class="h-24 w-full relative overflow-hidden">
+<svg class="w-full h-full stroke-secondary fill-none opacity-85" viewbox="0 0 100 30">
+<path d="M0,10 C10,10 20,25 30,25 C40,25 50,5 60,5 C70,5 80,15 90,15 L100,10" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+</div>
+<!-- Large Chart Area -->
+<div class="md:col-span-3 glass-panel micro-border p-6 rounded-lg">
+<div class="flex justify-between items-center mb-6">
+<h4 class="font-headline-md text-on-surface">Throughput History (24h)</h4>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-[2px] bg-primary"></div>
+<span class="text-[10px] text-on-surface-variant uppercase">RX</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-[2px] bg-tertiary"></div>
+<span class="text-[10px] text-on-surface-variant uppercase">TX</span>
+</div>
+</div>
+</div>
+<div class="h-64 w-full">
+<svg class="w-full h-full overflow-visible" viewbox="0 0 1000 200">
+<!-- Grid -->
+<line stroke="white" stroke-opacity="0.05" stroke-width="1" x1="0" x2="1000" y1="0" y2="0"></line>
+<line stroke="white" stroke-opacity="0.05" stroke-width="1" x1="0" x2="1000" y1="50" y2="50"></line>
+<line stroke="white" stroke-opacity="0.05" stroke-width="1" x1="0" x2="1000" y1="100" y2="100"></line>
+<line stroke="white" stroke-opacity="0.05" stroke-width="1" x1="0" x2="1000" y1="150" y2="150"></line>
+<line stroke="white" stroke-opacity="0.05" stroke-width="1" x1="0" x2="1000" y1="200" y2="200"></line>
+<!-- Data Lines -->
+<polyline fill="none" opacity="0.85" points="0,150 100,140 200,160 300,80 400,120 500,60 600,110 700,90 800,140 900,130 1000,150" stroke="var(--tw-color-primary)" stroke-width="2"></polyline>
+<polyline fill="none" opacity="0.85" points="0,180 100,170 200,185 300,140 400,160 500,120 600,150 700,140 800,170 900,165 1000,180" stroke="var(--tw-color-tertiary)" stroke-width="2"></polyline>
+</svg>
+</div>
+</div>
+</div>
+<!-- Logs Tab -->
+<div class="animate-in fade-in duration-500 h-full flex flex-col" x-show="activeTab === 'logs'">
+<div class="flex justify-between items-center mb-4 px-2">
+<div class="flex items-center gap-4">
+<span class="text-xs text-on-surface-variant bg-white/[0.04] px-2 py-1 rounded">Filtering: ALL</span>
+<span class="text-xs text-on-surface-variant bg-white/[0.04] px-2 py-1 rounded">Auto-scroll: ON</span>
+</div>
+<div class="text-[10px] text-outline uppercase font-bold">Session Start: 2023-11-24 08:00:00</div>
+</div>
+<div class="flex-1 bg-surface-container-lowest micro-border rounded-lg p-4 font-data-mono text-data-mono leading-6 log-scroll overflow-y-auto max-h-[600px]">
+<div class="space-y-1 opacity-80">
+<p><span class="text-outline">[08:42:01]</span> <span class="text-primary">INFO:</span> Initializing kernel modules...</p>
+<p><span class="text-outline">[08:42:02]</span> <span class="text-primary">INFO:</span> Network interface eth0 up (1Gbps)</p>
+<p><span class="text-outline">[08:42:04]</span> <span class="text-tertiary">WARN:</span> Late response from upstream node-02 (240ms)</p>
+<p><span class="text-outline">[08:42:05]</span> <span class="text-primary">INFO:</span> Mounting secondary storage block device /dev/sdb1</p>
+<p><span class="text-outline">[08:42:10]</span> <span class="text-primary">INFO:</span> Docker daemon service started successfully</p>
+<p><span class="text-outline">[08:42:11]</span> <span class="text-primary">INFO:</span> Pulling image 'insight-monitor:latest'</p>
+<p><span class="text-outline">[08:42:15]</span> <span class="text-on-surface">DEBUG:</span> Memory pressure check: 32% (Stable)</p>
+<p><span class="text-outline">[08:43:00]</span> <span class="text-error">ERROR:</span> Unexpected socket closure on port 8080</p>
+<p><span class="text-outline">[08:43:01]</span> <span class="text-primary">INFO:</span> Retrying connection to edge-gateway-01...</p>
+<p><span class="text-outline">[08:43:02]</span> <span class="text-primary">INFO:</span> Connection re-established. Handshake complete.</p>
+<p><span class="text-outline">[08:44:22]</span> <span class="text-primary">INFO:</span> Telemetry batch #4412 sent to central hub</p>
+<p><span class="text-outline">[08:45:00]</span> <span class="text-on-surface">DEBUG:</span> Cleaning up temporary buffers</p>
+<p><span class="text-outline">[08:46:11]</span> <span class="text-primary">INFO:</span> Scheduled health check passed</p>
+<p><span class="text-outline">[08:47:04]</span> <span class="text-tertiary">WARN:</span> High disk I/O wait detected on sda1 (12%)</p>
+<p><span class="text-outline">[08:47:15]</span> <span class="text-primary">INFO:</span> Load balancer health check received</p>
+<p><span class="text-outline">[08:48:33]</span> <span class="text-primary">INFO:</span> Applying configuration patch v1.2.4-hotfix</p>
+<p><span class="text-outline">[08:49:01]</span> <span class="text-primary">INFO:</span> Reloading configuration...</p>
+<p><span class="text-outline">[08:49:05]</span> <span class="text-primary">INFO:</span> System running in OPTIMIZED mode</p>
+<div class="animate-pulse flex items-center gap-2">
+<span class="text-outline">[08:50:11]</span> <span class="w-2 h-4 bg-primary/40"></span>
+</div>
+</div>
+</div>
+</div>
+<!-- Other Tabs Placeholder -->
+<div class="flex items-center justify-center h-64 animate-in fade-in duration-500" x-show="activeTab === 'overview' || activeTab === 'config'">
+<div class="text-center">
+<span class="material-symbols-outlined text-4xl text-outline mb-4">construction</span>
+<p class="text-on-surface-variant font-body-md">模块开发中...</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Bottom Dashboard Quick View -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-gutter">
+<div class="glass-panel micro-border p-4 rounded-lg flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">security</span>
+</div>
+<div>
+<p class="text-[10px] text-outline uppercase font-bold">Security Score</p>
+<p class="font-headline-md text-on-surface">98/100</p>
+</div>
+</div>
+<div class="glass-panel micro-border p-4 rounded-lg flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-tertiary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">speed</span>
+</div>
+<div>
+<p class="text-[10px] text-outline uppercase font-bold">Latency</p>
+<p class="font-headline-md text-on-surface">12ms</p>
+</div>
+</div>
+<div class="glass-panel micro-border p-4 rounded-lg flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-secondary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">memory</span>
+</div>
+<div>
+<p class="text-[10px] text-outline uppercase font-bold">Kernel Version</p>
+<p class="font-headline-md text-on-surface">6.5.0-x64</p>
+</div>
+</div>
+<div class="glass-panel micro-border p-4 rounded-lg flex items-center gap-4">
+<div class="w-10 h-10 rounded bg-error/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-error">priority_high</span>
+</div>
+<div>
+<p class="text-[10px] text-outline uppercase font-bold">Pending Alerts</p>
+<p class="font-headline-md text-on-surface">0</p>
+</div>
+</div>
+</section>
+</div>
+<!-- Background Ambient Shader Effect -->
+<div class="fixed inset-0 z-[-1] pointer-events-none opacity-20">
+
+</div>
+</main>
+<script defer="" src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script>
+        // Micro-interactions and auto-scrolling log mock
+        document.addEventListener('alpine:init', () => {
+            // Keep the log scrolled to bottom
+            setInterval(() => {
+                const logContainer = document.querySelector('.log-scroll');
+                if (logContainer) {
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+            }, 3000);
+        });
+    </script>
+</body></html>

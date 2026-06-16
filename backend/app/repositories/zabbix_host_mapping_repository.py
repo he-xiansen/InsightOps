@@ -26,6 +26,10 @@ class ZabbixHostMappingRepository:
         mappings = self.session.scalars(statement).all()
         return {mapping.ip: mapping for mapping in mappings}
 
+    def list_all(self) -> list[ZabbixHostMapping]:
+        statement = select(ZabbixHostMapping).order_by(ZabbixHostMapping.ip)
+        return list(self.session.scalars(statement).all())
+
     def upsert_many(self, payloads: list[dict[str, object]]) -> int:
         deduplicated_payloads = self._deduplicate_payloads(payloads)
         existing_mappings = self.get_by_ips([str(payload["ip"]) for payload in deduplicated_payloads])

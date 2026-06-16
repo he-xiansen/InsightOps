@@ -1,0 +1,96 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: zabbix6-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_bin
+      - --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+    networks:
+      - zabbix6-net
+
+  zabbix-server:
+    image: zabbix/zabbix-server-mysql:ubuntu-6.0-latest
+    container_name: zabbix6-server
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_SERVER_HOST: mysql
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      ZBX_LISTENPORT: 10051
+    ports:
+      - "10051:10051"
+    volumes:
+      - zabbix_server_alertscripts:/usr/lib/zabbix/alertscripts
+      - zabbix_server_externalscripts:/usr/lib/zabbix/externalscripts
+    networks:
+      - zabbix6-net
+
+  zabbix-agent2:
+    image: zabbix/zabbix-agent2:ubuntu-6.0-latest
+    container_name: zabbix6-agent2
+    restart: unless-stopped
+    depends_on:
+      zabbix-server:
+        condition: service_started
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      ZBX_HOSTNAME: Zabbix server
+      ZBX_PASSIVE_ALLOW: "true"
+      ZBX_ACTIVE_ALLOW: "false"
+    pid: host
+    privileged: true
+    volumes:
+      - /:/hostfs:ro
+      - /dev:/hostfs/dev:ro
+      - /proc:/hostfs/proc:ro
+      - /sys:/hostfs/sys:ro
+    networks:
+      - zabbix6-net
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-mysql:ubuntu-6.0-latest
+    container_name: zabbix6-web
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      zabbix-server:
+        condition: service_started
+    environment:
+      DB_SERVER_HOST: mysql
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      ZBX_SERVER_HOST: zabbix-server
+      PHP_TZ: ${PHP_TZ}
+    ports:
+      - "8080:8080"
+    networks:
+      - zabbix6-net
+
+networks:
+  zabbix6-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  zabbix_server_alertscripts:
+  zabbix_server_externalscripts:

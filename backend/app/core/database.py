@@ -19,6 +19,7 @@ def build_project_session_factory(
         settings.project_database_url,
         future=True,
         pool_pre_ping=True,
+        connect_args={"charset": "utf8mb4"},
     )
     return sessionmaker(bind=engine, autoflush=False, autocommit=False)
 

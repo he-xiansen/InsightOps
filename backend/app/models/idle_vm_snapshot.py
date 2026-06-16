@@ -14,7 +14,6 @@ class IdleVMSnapshot(Base):
     idle_days: Mapped[int]
     owner: Mapped[str | None] = mapped_column(String(255), nullable=True)
     department: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    lab: Mapped[str | None] = mapped_column(String(255), nullable=True)
     recycle_level: Mapped[str] = mapped_column(String(32))
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     last_rdp_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

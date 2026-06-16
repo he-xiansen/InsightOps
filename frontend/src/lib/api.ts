@@ -5,14 +5,23 @@ export type VmAssetItem = {
   ip: string;
   hostname: string | null;
   department: string | null;
-  lab: string | null;
   owner: string | null;
+  phone: string | null;
+  mobile: string | null;
   os_type: string | null;
   status: string;
   last_rdp_login_at: string | null;
 };
 
+export type VmAssetPerfItem = VmAssetItem & {
+  idle_days: number;
+  cpu_avg: number | null;
+  mem_avg: number | null;
+  recommendation: string;
+};
+
 export type VmAssetListResponse = { items: VmAssetItem[] };
+export type VmAssetPerfListResponse = { items: VmAssetPerfItem[] };
 
 export type IdleSnapshotItem = {
   snapshot_date: string;
@@ -20,7 +29,6 @@ export type IdleSnapshotItem = {
   idle_days: number;
   owner: string | null;
   department: string | null;
-  lab: string | null;
   recycle_level: string;
   reason: string | null;
   last_rdp_login_at: string | null;
@@ -48,13 +56,65 @@ export type RdpLoginListResponse = {
   total: number;
 };
 
+export type AdviceItem = {
+  ip: string;
+  rating: string;
+  summary: string;
+  details: string[];
+};
+
+export type AdviceResponse = {
+  items: AdviceItem[];
+};
+
+export type TestConnectionResponse = {
+  ok: boolean;
+  message: string;
+};
+
+export type SettingsResponse = {
+  settings: Record<string, string>;
+};
+
+
+
+export type PerfHostItem = {
+  ip: string;
+  cpu: number | null;
+  mem: number | null;
+};
+
+export type PerfOverviewResponse = {
+  hosts: PerfHostItem[];
+};
+
+export type PerfTrendPoint = { clock: number; value_avg: number };
+
+export type PerfTrendData = {
+  cpu: PerfTrendPoint[];
+  mem: PerfTrendPoint[];
+};
+
+export type PerfTrendResponse = {
+  code: number;
+  message: string;
+  data: PerfTrendData;
+};
+
 // apiFetch 泛型基础方法
-const JSON_HEADERS = { Accept: "application/json" };
+const JSON_HEADERS: Record<string, string> = { Accept: "application/json" };
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {
+    ...JSON_HEADERS,
+    ...(init?.headers as Record<string, string> | undefined),
+  };
+  if (init?.body) {
+    headers["Content-Type"] = "application/json";
+  }
   const response = await fetch(path, {
     ...init,
-    headers: { ...JSON_HEADERS, ...(init?.headers ?? {}) },
+    headers,
   });
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
@@ -69,6 +129,10 @@ export async function getHealth(): Promise<HealthResponse> {
 
 export async function getVmAssets(): Promise<VmAssetListResponse> {
   return apiFetch<VmAssetListResponse>("/api/assets");
+}
+
+export async function getVmAssetsWithPerf(): Promise<VmAssetPerfListResponse> {
+  return apiFetch<VmAssetPerfListResponse>("/api/assets/perf");
 }
 
 export async function getIdleSnapshots(): Promise<IdleSnapshotListResponse> {
@@ -94,4 +158,38 @@ export async function getRdpLogins(
   return apiFetch<RdpLoginListResponse>(
     `/api/v1/rdp/logins?limit=${limit}&offset=${offset}`,
   );
+}
+
+export async function getSettings(): Promise<SettingsResponse> {
+  return apiFetch<SettingsResponse>("/api/v1/settings");
+}
+
+export async function updateSettings(settings: Record<string, string>): Promise<SettingsResponse> {
+  return apiFetch<SettingsResponse>("/api/v1/settings", {
+    method: "PUT",
+    body: JSON.stringify({ settings }),
+  });
+}
+
+export async function getAiAdvice(hosts: any[]): Promise<AdviceResponse> {
+  return apiFetch<AdviceResponse>("/api/v1/ai/advice", {
+    method: "POST",
+    body: JSON.stringify({ hosts }),
+  });
+}
+
+
+
+export async function getPerfOverview(): Promise<PerfOverviewResponse> {
+  return apiFetch<PerfOverviewResponse>("/api/v1/perf/overview");
+}
+
+export async function getPerfTrends(ip: string): Promise<PerfTrendResponse> {
+  return apiFetch<PerfTrendResponse>(`/api/v1/perf/trends?ip=${encodeURIComponent(ip)}`);
+}
+
+export async function testAiConnection(): Promise<TestConnectionResponse> {
+  return apiFetch<TestConnectionResponse>("/api/v1/ai/test-connection", {
+    method: "POST",
+  });
 }

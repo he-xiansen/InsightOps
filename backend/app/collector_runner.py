@@ -9,10 +9,12 @@ from app.core.database import (
     get_zabbix_settings,
 )
 from app.tasks.idle_analysis import DEFAULT_IDLE_DAYS, run_idle_analysis
+from app.tasks.perf_collect import run_perf_collect
 from app.tasks.zabbix_sync import run_zabbix_host_sync
+from app.repositories.system_settings_repository import SYSTEM_SETTINGS_KEYS
 
 
-TASK_NAMES = {"zabbix_host_sync", "idle_analysis"}
+TASK_NAMES = {"zabbix_host_sync", "idle_analysis", "perf_collect"}
 
 
 def resolve_task_name(cli_task: str | None, env_task: str | None) -> str:
@@ -31,6 +33,19 @@ def run_selected_task(task_name: str, idle_days: int) -> int:
             zabbix_engine = build_zabbix_engine(get_zabbix_settings())
             try:
                 return run_zabbix_host_sync(session, zabbix_engine)
+            finally:
+                zabbix_engine.dispose()
+
+        if task_name == "perf_collect":
+            from app.core.database import build_zabbix_engine, get_zabbix_settings
+            from app.repositories.system_settings_repository import SystemSettingsRepository
+
+            settings_repo = SystemSettingsRepository(session)
+            ip_filter = settings_repo.get("perf_collect_ip_filter")
+
+            zabbix_engine = build_zabbix_engine(get_zabbix_settings())
+            try:
+                return run_perf_collect(session, zabbix_engine, ip_filter=ip_filter)
             finally:
                 zabbix_engine.dispose()
 

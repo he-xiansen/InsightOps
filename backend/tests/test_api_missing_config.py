@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core import database as database_module
+from app.core.settings import MissingSettingsError
 from app.main import app
 from app.models import VMAsset
 from app.models.base import Base
@@ -43,6 +44,11 @@ EXPECTED_PROJECT_FIELDS = [
 ]
 
 
+def _safe_cache_clear(fn: object) -> None:
+    if callable(getattr(fn, "cache_clear", None)):
+        fn.cache_clear()  # type: ignore[union-attr]
+
+
 @pytest.fixture(autouse=True)
 def clear_runtime_state(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     app.dependency_overrides.clear()
@@ -52,24 +58,16 @@ def clear_runtime_state(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None
 
     database_module.get_settings.cache_clear()
     database_module.get_project_session_factory.cache_clear()
-    get_project_settings = getattr(database_module, "get_project_settings", None)
-    if get_project_settings is not None:
-        get_project_settings.cache_clear()
-    get_zabbix_settings = getattr(database_module, "get_zabbix_settings", None)
-    if get_zabbix_settings is not None:
-        get_zabbix_settings.cache_clear()
+    _safe_cache_clear(getattr(database_module, "get_project_settings", None))
+    _safe_cache_clear(getattr(database_module, "get_zabbix_settings", None))
 
     yield
 
     app.dependency_overrides.clear()
     database_module.get_settings.cache_clear()
     database_module.get_project_session_factory.cache_clear()
-    get_project_settings = getattr(database_module, "get_project_settings", None)
-    if get_project_settings is not None:
-        get_project_settings.cache_clear()
-    get_zabbix_settings = getattr(database_module, "get_zabbix_settings", None)
-    if get_zabbix_settings is not None:
-        get_zabbix_settings.cache_clear()
+    _safe_cache_clear(getattr(database_module, "get_project_settings", None))
+    _safe_cache_clear(getattr(database_module, "get_zabbix_settings", None))
 
 
 @pytest.fixture()
@@ -90,7 +88,19 @@ def session_factory() -> Generator[sessionmaker[Session], None, None]:
 
 
 @pytest.mark.parametrize("path", ["/api/assets", "/api/v1/idle"])
-def test_read_endpoints_return_explicit_503_when_project_settings_missing(path: str) -> None:
+def test_read_endpoints_return_explicit_503_when_project_settings_missing(
+    path: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        database_module,
+        "get_project_settings",
+        lambda: (_ for _ in ()).throw(
+            MissingSettingsError(scope="project database", fields=EXPECTED_PROJECT_FIELDS),
+        ),
+    )
+    database_module.get_project_session_factory.cache_clear()
+
     client = TestClient(app, raise_server_exceptions=False)
 
     response = client.get(path)
