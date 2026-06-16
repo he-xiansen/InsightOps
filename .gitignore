@@ -1,4 +1,13 @@
-backend/.venv/
 **/__pycache__/
 *.egg-info/
+*.pyc
+.mcp.json
 .pytest_cache/
+.superpowers/
+.trae/
+backend/**/__pycache__/
+backend/--exclude=.venv
+backend/.venv/
+backend/__pycache__/
+frontend/dist/
+frontend/node_modules/
