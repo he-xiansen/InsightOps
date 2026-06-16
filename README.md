@@ -147,6 +147,71 @@ collector 容器支持以下定时任务（通过 `COLLECTOR_TASK` 环境变量�
 - **LLM API Key / Endpoint / Model** — 用于 AI 回收建议功能
 - **性能采集 IP 段过滤** — 限定从 Zabbix 采集哪些 IP 段的数据
 
+## 主机信息同步接口
+
+用于从外部 CMDB 或工单系统向 InsightOps 批量同步主机信息（部门、负责人、联系方式等）。
+
+### 接口说明
+
+| 项目 | 值 |
+|------|-----|
+| 方法 | `POST` |
+| 路径 | `/api/v1/sync/vm-assets` |
+| 认证 | 请求头 `X-API-Key` |
+| Content-Type | `application/json` |
+
+### 固定 API Key
+
+内网部署时使用以下固定 Key，无需每次重新生成：
+
+```
+insightops-sync-2026
+```
+
+首次部署时执行以下命令写入数据库：
+
+```bash
+docker exec -i deploy-insightops-mysql-1 mysql -uroot -p"$MYSQL_ROOT_PASSWORD" insightops << "SQL"
+INSERT INTO api_keys (key_name, key_hash, enabled)
+VALUES ('sync-api-key', SHA2('insightops-sync-2026', 256), 1)
+ON DUPLICATE KEY UPDATE key_hash = SHA2('insightops-sync-2026', 256), enabled = 1;
+SQL
+```
+
+### 调用示例
+
+```bash
+curl -X POST 'http://<平台IP>:8080/api/v1/sync/vm-assets'   -H 'Content-Type: application/json'   -H 'X-API-Key: insightops-sync-2026'   -d '{
+    "items": [
+      {
+        "ip": "10.0.1.1",
+        "hostname": "web-server-01",
+        "department": "技术部",
+        "owner": "张三",
+        "phone": "010-88008801",
+        "mobile": "13800138001"
+      }
+    ]
+  }'
+```
+
+### 请求体字段说明
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `ip` | ✅ | 主机 IP，唯一标识 |
+| `hostname` | 可选 | 主机名 |
+| `department` | 可选 | 部门 |
+| `owner` | 可选 | 负责人 |
+| `phone` | 可选 | 座机号码 |
+| `mobile` | 可选 | 手机号码 |
+| `os_type` | 可选 | 操作系统类型 |
+| `status` | 可选 | 状态，默认 `active` |
+
+> 只传需要更新的字段即可，未传的字段保持原值不变。同一 `ip` 重复提交会覆盖已有字段。
+
+详细文档请参考 `docs/api/vm-sync-api.md`。
+
 ## License
 
 MIT
