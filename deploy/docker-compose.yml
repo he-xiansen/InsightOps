@@ -20,7 +20,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.api
-    restart: "no"
+    restart: unless-stopped
     depends_on:
       insightops-mysql:
         condition: service_healthy
@@ -72,7 +72,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.collector
-    restart: "no"
+    restart: unless-stopped
     depends_on:
       insightops-mysql:
         condition: service_healthy

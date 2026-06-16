@@ -3,7 +3,14 @@ from sqlalchemy.orm import Session
 from app.models.system_settings import SystemSettings
 
 
-SYSTEM_SETTINGS_KEYS = {"llm_endpoint", "llm_api_key", "llm_model", "perf_collect_ip_filter"}
+SYSTEM_SETTINGS_KEYS = {
+    "llm_endpoint", "llm_api_key", "llm_model",
+    "perf_collect_ip_filter",
+    "perf_collect_interval",
+    "idle_analysis_interval",
+    "perf_retention_days",
+    "rdp_retention_days",
+}
 
 
 class SystemSettingsRepository:

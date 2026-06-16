@@ -75,15 +75,15 @@ export function DeviceManagementPage() {
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-center">
               <thead className="bg-primary/[0.06] border-b border-primary/10">
                 <tr>
+                  <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">状态</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">主机名</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">IP</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">负责人</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">电话</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">闲置天数</th>
-                  <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">状态</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04] min-h-[555px]">
@@ -92,10 +92,10 @@ export function DeviceManagementPage() {
                     <td className="px-4 py-3">
                       <span className={`inline-block w-2.5 h-2.5 rounded-full ${item.status === "active" ? "bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.6)]" : "bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.4)]"}`} />
                     </td>
-                    <td className="px-4 py-3 font-medium">{item.hostname ?? "--"}</td>
-                    <td className="px-4 py-3 font-mono tabular-nums">{item.ip}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{item.owner ?? "--"}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{item.phone ?? "--"}</td>
+                    <td className="px-4 py-3 font-medium text-center">{item.hostname ?? "--"}</td>
+                    <td className="px-4 py-3 font-mono tabular-nums text-center">{item.ip}</td>
+                    <td className="px-4 py-3 text-on-surface-variant text-center">{item.owner ?? "--"}</td>
+                    <td className="px-4 py-3 text-on-surface-variant text-center">{item.phone ?? "--"}</td>
                     <td className="px-4 py-3">
                       {item.idle_days >= 0 ? (
                         <span className={`tabular-nums ${item.idle_days >= 60 ? "text-error" : item.idle_days >= 30 ? "text-tertiary" : ""}`}>

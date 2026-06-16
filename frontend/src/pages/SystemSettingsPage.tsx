@@ -12,6 +12,10 @@ export function SystemSettingsPage() {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [ipFilter, setIpFilter] = useState("*");
+  const [perfInterval, setPerfInterval] = useState("600");
+  const [idleInterval, setIdleInterval] = useState("1800");
+  const [perfRetention, setPerfRetention] = useState("30");
+  const [rdpRetention, setRdpRetention] = useState("90");
   const [saveResult, setSaveResult] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -22,6 +26,10 @@ export function SystemSettingsPage() {
       if (s.llm_api_key && s.llm_api_key !== "••••••") setApiKey(s.llm_api_key);
       if (s.llm_model) setModel(s.llm_model);
       if (s.perf_collect_ip_filter) setIpFilter(s.perf_collect_ip_filter);
+      if (s.perf_collect_interval) setPerfInterval(s.perf_collect_interval);
+      if (s.idle_analysis_interval) setIdleInterval(s.idle_analysis_interval);
+      if (s.perf_retention_days) setPerfRetention(s.perf_retention_days);
+      if (s.rdp_retention_days) setRdpRetention(s.rdp_retention_days);
     }).catch(() => {}).finally(() => setLoaded(true));
   }, []);
 
@@ -34,6 +42,10 @@ export function SystemSettingsPage() {
         llm_api_key: apiKey,
         llm_model: model,
         perf_collect_ip_filter: ipFilter,
+        perf_collect_interval: perfInterval,
+        idle_analysis_interval: idleInterval,
+        perf_retention_days: perfRetention,
+        rdp_retention_days: rdpRetention,
       });
       setSaveResult("保存成功");
     } catch (e: any) {
@@ -125,6 +137,64 @@ export function SystemSettingsPage() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* 采集与数据保留配置 */}
+      <div className="glass-panel micro-border rounded p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <span className="material-symbols-outlined text-tertiary text-2xl">schedule</span>
+          <div>
+            <h2 className="text-headline-md">采集与数据保留</h2>
+            <p className="text-label-md text-on-surface-variant">配置数据采集频率和历史数据保留天数</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-label-md text-on-surface-variant mb-1">性能采集间隔（秒）</label>
+            <input
+              type="number"
+              value={perfInterval}
+              onChange={(e) => setPerfInterval(e.target.value)}
+              className="w-full h-9 px-3 rounded border border-white/10 bg-transparent text-sm text-on-surface-variant focus:outline-none focus:border-primary/50"
+              min="60"
+            />
+            <p className="text-xs text-on-surface-variant/50 mt-1">建议 600（10 分钟），最小 60</p>
+          </div>
+          <div>
+            <label className="block text-label-md text-on-surface-variant mb-1">闲置分析间隔（秒）</label>
+            <input
+              type="number"
+              value={idleInterval}
+              onChange={(e) => setIdleInterval(e.target.value)}
+              className="w-full h-9 px-3 rounded border border-white/10 bg-transparent text-sm text-on-surface-variant focus:outline-none focus:border-primary/50"
+              min="60"
+            />
+            <p className="text-xs text-on-surface-variant/50 mt-1">建议 1800（30 分钟），最小 60</p>
+          </div>
+          <div>
+            <label className="block text-label-md text-on-surface-variant mb-1">性能数据保留（天）</label>
+            <input
+              type="number"
+              value={perfRetention}
+              onChange={(e) => setPerfRetention(e.target.value)}
+              className="w-full h-9 px-3 rounded border border-white/10 bg-transparent text-sm text-on-surface-variant focus:outline-none focus:border-primary/50"
+              min="1"
+            />
+            <p className="text-xs text-on-surface-variant/50 mt-1">超过此天数的 CPU/内存数据将被清理</p>
+          </div>
+          <div>
+            <label className="block text-label-md text-on-surface-variant mb-1">RDP 日志保留（天）</label>
+            <input
+              type="number"
+              value={rdpRetention}
+              onChange={(e) => setRdpRetention(e.target.value)}
+              className="w-full h-9 px-3 rounded border border-white/10 bg-transparent text-sm text-on-surface-variant focus:outline-none focus:border-primary/50"
+              min="1"
+            />
+            <p className="text-xs text-on-surface-variant/50 mt-1">超过此天数的 RDP 登录记录将被清理</p>
+          </div>
         </div>
       </div>
 

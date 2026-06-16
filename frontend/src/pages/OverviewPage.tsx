@@ -93,7 +93,13 @@ function useDashboard() {
       }
     }
     load();
-    return () => { cancelled = true; };
+    // 自动刷新：60 秒轮询（仅页面可见时）
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        load();
+      }
+    }, 60000);
+    return () => { cancelled = true; clearInterval(intervalId); };
   }, []);
 
   // 加载所有主机的性能总览
@@ -521,7 +527,7 @@ export function OverviewPage() {
           <span className="text-label-md text-on-surface-variant tabular-nums">{d.deviceFiltered.length} 台 / {d.devices.length} 在线</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-center">
             <thead className="bg-primary/[0.06] border-b border-primary/10">
               <tr>
                 <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">状态</th>
@@ -538,10 +544,10 @@ export function OverviewPage() {
                   <td className="px-4 py-3">
                     <span className={`inline-block w-2.5 h-2.5 rounded-full ${dev.status === "active" ? "bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.6)]" : "bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.4)]"}`} />
                   </td>
-                  <td className="px-4 py-3 font-medium">{dev.hostname ?? "--"}</td>
-                  <td className="px-4 py-3 font-mono tabular-nums">{dev.ip}</td>
-                  <td className="px-4 py-3 text-on-surface-variant">{dev.owner ?? "--"}</td>
-                  <td className="px-4 py-3 text-on-surface-variant">{dev.phone ?? "--"}</td>
+                  <td className="px-4 py-3 font-medium text-center">{dev.hostname ?? "--"}</td>
+                  <td className="px-4 py-3 font-mono tabular-nums text-center">{dev.ip}</td>
+                  <td className="px-4 py-3 text-on-surface-variant text-center">{dev.owner ?? "--"}</td>
+                  <td className="px-4 py-3 text-on-surface-variant text-center">{dev.phone ?? "--"}</td>
                   <td className="px-4 py-3">
                     {dev.idle_days >= 0 ? (
                       <span className={`tabular-nums ${dev.idle_days >= 60 ? "text-error" : dev.idle_days >= 30 ? "text-tertiary" : ""}`}>
