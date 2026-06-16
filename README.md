@@ -117,12 +117,18 @@ curl -X POST http://localhost:8000/api/assets/bulk-upsert \
 
 在需要审计远程桌面登录的 Windows 主机上执行：
 
-```bash
+1. 将以下 **两个文件** 复制到 Windows 主机同一目录下：
+   - `deploy/setup_rdp_collector.bat`
+   - `deploy/neone-rdp-collector.ps1`
+
+2. **以管理员身份** 运行 `setup_rdp_collector.bat`
+
+```batch
 # 以管理员身份运行
-deploy\setup_rdp_collector.bat
+setup_rdp_collector.bat
 ```
 
-脚本会自动安装计划任务，每 5 分钟采集一次 RDP 登录事件并上报至平台 API。
+脚本会自动将 `.ps1` 拷贝到 `%ProgramData%\InsightOps\` 并注册计划任务，每 5 分钟采集一次 RDP 登录事件上报至平台 API。
 
 ## 采集任务
 
