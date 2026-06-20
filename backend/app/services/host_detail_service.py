@@ -1,5 +1,6 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
+from app.core.settings import CN_TZ
 from app.services.vm_asset_service import _calc_status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -22,9 +23,8 @@ class HostDetailService:
             if asset.last_rdp_login_at:
                 last_rdp = asset.last_rdp_login_at
                 if last_rdp.tzinfo is None:
-                    from datetime import timezone
-                    last_rdp = last_rdp.replace(tzinfo=timezone.utc)
-                idle_days = (datetime.now(UTC) - last_rdp).days
+                    last_rdp = last_rdp.replace(tzinfo=CN_TZ)
+                idle_days = (datetime.now(CN_TZ) - last_rdp).days
             asset_info = {
                 "ip": asset.ip,
                 "hostname": asset.hostname,
@@ -39,7 +39,7 @@ class HostDetailService:
             }
 
         # 2. 性能趋势（取最近 7 天）
-        seven_days_ago = datetime.now(UTC) - timedelta(days=7)
+        seven_days_ago = datetime.now(CN_TZ) - timedelta(days=7)
         perf_records = self.session.query(PerfMetric).filter(
             PerfMetric.ip == ip,
             PerfMetric.collected_at >= seven_days_ago,

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from app.core.settings import CN_TZ
 
 from sqlalchemy.orm import Session
 
@@ -18,10 +19,10 @@ from app.schemas.vm_asset import (
 def _calc_idle_days(last_rdp_login_at: datetime | None) -> int:
     if last_rdp_login_at is None:
         return -1
-    now = datetime.now(timezone.utc)
+    now = datetime.now(CN_TZ)
     login = last_rdp_login_at
     if login.tzinfo is None:
-        login = login.replace(tzinfo=timezone.utc)
+        login = login.replace(tzinfo=CN_TZ)
     return max((now - login).days, 0)
 
 
@@ -32,10 +33,10 @@ def _calc_status(last_seen_at: datetime | None) -> str:
     """
     if last_seen_at is None:
         return "inactive"
-    now = datetime.now(timezone.utc)
+    now = datetime.now(CN_TZ)
     seen = last_seen_at
     if seen.tzinfo is None:
-        seen = seen.replace(tzinfo=timezone.utc)
+        seen = seen.replace(tzinfo=CN_TZ)
     if (now - seen).total_seconds() <= 600:  # 10 分钟
         return "active"
     return "inactive"
@@ -85,7 +86,35 @@ class VMAssetService:
 
     def list_assets_with_perf(self) -> VMAssetListResponse:
         """返回含闲置天数、性能评估的资产列表"""
+        from sqlalchemy import func, desc
+        from app.models.perf_metric import PerfMetric
+
         assets = self.repository.list_all()
+        ips = [a.ip for a in assets]
+
+        # 批量查询各主机最新的性能数据
+        # 用子查询取每个 ip 最新的 perf_metric
+        if ips:
+            subq = (
+                self.session.query(
+                    PerfMetric.ip,
+                    func.max(PerfMetric.collected_at).label("max_time")
+                )
+                .filter(PerfMetric.ip.in_(ips))
+                .group_by(PerfMetric.ip)
+                .subquery()
+            )
+            latest_perf_rows = self.session.query(PerfMetric).join(
+                subq,
+                (PerfMetric.ip == subq.c.ip) & (PerfMetric.collected_at == subq.c.max_time)
+            ).all()
+            perf_map = {p.ip: p for p in latest_perf_rows}
+        else:
+            perf_map = {}
+
+        def _idle(idays):
+            return "关注" if idays >= 30 else "保留"
+
         return VMAssetListResponse(
             items=[
                 VMAssetPerfItem(
@@ -99,9 +128,9 @@ class VMAssetService:
                     status=_calc_status(asset.last_seen_at),
                     last_rdp_login_at=asset.last_rdp_login_at,
                     idle_days=_calc_idle_days(asset.last_rdp_login_at),
-                    cpu_avg=None,
-                    mem_avg=None,
-                    recommendation="关注" if _calc_idle_days(asset.last_rdp_login_at) >= 30 else "保留",
+                    cpu_avg=round(perf_map[asset.ip].cpu_avg, 1) if asset.ip in perf_map and perf_map[asset.ip].cpu_avg is not None else None,
+                    mem_avg=round(perf_map[asset.ip].mem_avg, 1) if asset.ip in perf_map and perf_map[asset.ip].mem_avg is not None else None,
+                    recommendation=_idle(_calc_idle_days(asset.last_rdp_login_at)),
                 )
                 for asset in assets
             ]
@@ -136,14 +165,14 @@ class VMAssetService:
         ).model_dump()
 
     def sync_assets(self, payload: BulkUpsertVMAssetsRequest) -> AssetSyncResponse:
-        started_at = datetime.now(timezone.utc)
+        started_at = datetime.now(CN_TZ)
         serialized_items = self._serialize_payload(payload)
         upserted_count = self.repository.upsert_many(serialized_items)
         self.session.add(
             SyncJob(
                 job_type="asset_sync",
                 started_at=started_at,
-                finished_at=datetime.now(timezone.utc),
+                finished_at=datetime.now(CN_TZ),
                 status="success",
                 processed_count=upserted_count,
             )

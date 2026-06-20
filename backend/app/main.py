@@ -1,4 +1,5 @@
 import os
+import threading
 from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.staticfiles import StaticFiles
@@ -17,6 +18,28 @@ from app.core.settings import MissingSettingsError
 
 
 app = FastAPI(title="InsightOps API", version="0.2.0")
+
+# 后台 collector daemon
+_daemon_started = False
+_daemon_lock = threading.Lock()
+
+def _start_collector_daemon():
+    global _daemon_started
+    with _daemon_lock:
+        if _daemon_started:
+            return
+        _daemon_started = True
+    try:
+        from app.collector_daemon import run_loop
+        t = threading.Thread(target=run_loop, daemon=True, name="collector-daemon")
+        t.start()
+        print("[main] collector daemon thread started")
+    except Exception as e:
+        print(f"[main] failed to start collector daemon: {e}")
+        with _daemon_lock:
+            _daemon_started = False
+
+_start_collector_daemon()
 
 os.makedirs("/app/backend/uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="/app/backend/uploads"), name="uploads")

@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from datetime import datetime
+from app.core.settings import CN_TZ
 
 from sqlalchemy.orm import Session
 
@@ -16,8 +17,8 @@ class ZabbixSyncService:
         self.repository = ZabbixHostMappingRepository(session)
 
     def sync_host_rows(self, rows: list[dict[str, object]]) -> int:
-        started_at = datetime.now(timezone.utc)
-        synced_at = datetime.now(timezone.utc)
+        started_at = datetime.now(CN_TZ)
+        synced_at = datetime.now(CN_TZ)
         normalized_rows = [
             {
                 **normalize_host_row(row),
@@ -31,7 +32,7 @@ class ZabbixSyncService:
             SyncJob(
                 job_type=ZABBIX_HOST_SYNC_JOB_NAME,
                 started_at=started_at,
-                finished_at=datetime.now(timezone.utc),
+                finished_at=datetime.now(CN_TZ),
                 status="success",
                 processed_count=processed_count,
             )

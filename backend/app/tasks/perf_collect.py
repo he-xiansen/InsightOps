@@ -1,6 +1,7 @@
 """定时从 Zabbix trends 表采集 CPU/内存数据到本地 perf_metrics 表"""
 from app.core.settings import CN_TZ
-from datetime import datetime
+from datetime import datetime, timezone
+UTC = timezone.utc
 
 from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
@@ -112,7 +113,7 @@ def run_perf_collect(session: Session, zabbix_engine: Engine, ip_filter: str | N
             clock = int(row["clock"])
             key = (ip, clock)
             if key not in records:
-                records[key] = {"ip": ip, "collected_at": datetime.fromtimestamp(clock, tz=UTC)}
+                records[key] = {"ip": ip, "collected_at": datetime.fromtimestamp(clock, tz=UTC).astimezone(CN_TZ)}
             if row["itemid"] in cpu_itemids:
                 records[key]["cpu_avg"] = float(row["value_avg"])
             elif row["itemid"] in mem_itemids:

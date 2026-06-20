@@ -37,7 +37,7 @@ function useAvatar() {
         if (res.status === 401) {
           localStorage.removeItem("token");
           localStorage.removeItem("username");
-          window.location.href = "/login";
+          // 静默处理，不强制跳转
           return;
         }
         if (res.ok) {

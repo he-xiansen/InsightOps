@@ -120,7 +120,13 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (response.status === 401) {
     localStorage.removeItem("token");
     localStorage.removeItem("username");
-    window.location.href = "/login";
+    // 不在 apiFetch 中强制跳转——让调用方决定是否跳转
+    // dashboard 等公开页面应静默失败，不跳登录页
+    const isLoginPage = window.location.pathname === "/login";
+    if (!isLoginPage) {
+      // 仅当不在登录页时标记 token 过期
+      localStorage.setItem("token_expired", "1");
+    }
     throw new Error("Unauthorized");
   }
   if (!response.ok) {

@@ -192,8 +192,8 @@ export function SystemSettingsPage() {
           </div>
         </div>
         <div className="flex items-center gap-3 pt-4">
-          <Button variant="outline" onClick={handleZabbixTest} disabled={zabbixTesting}>{zabbixTesting ? "测试中..." : "测试 Zabbix 连接"}</Button>
           <Button onClick={handleSave} disabled={saving}>{saving ? "保存中..." : "保存配置"}</Button>
+          <Button variant="outline" onClick={handleZabbixTest} disabled={zabbixTesting}>{zabbixTesting ? "测试中..." : "测试 Zabbix 连接"}</Button>
           {saveResult && <span className={`text-sm ${saveResult.includes("成功") ? "text-primary" : "text-error"}`}>{saveResult}</span>}
         </div>
         {zabbixTestResult && (
@@ -236,6 +236,10 @@ export function SystemSettingsPage() {
             <input type="number" value={rdpRetention} onChange={(e) => setRdpRetention(e.target.value)} className="w-full h-9 px-3 rounded border border-white/10 bg-transparent text-sm text-on-surface-variant focus:outline-none focus:border-primary/50" min="1" />
             <p className="text-xs text-on-surface-variant/50 mt-1">超过此天数的 RDP 登录记录将被清理</p>
           </div>
+        </div>
+        <div className="mt-6 flex items-center gap-3">
+          <Button onClick={handleSave} disabled={saving}>{saving ? "保存中..." : "保存采集配置"}</Button>
+          {saveResult && <span className={`text-sm ${saveResult.includes("成功") ? "text-primary" : "text-error"}`}>{saveResult}</span>}
         </div>
       </div>
 

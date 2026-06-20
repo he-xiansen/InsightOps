@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
+import * as XLSX from "xlsx";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,7 +76,32 @@ export function DeviceManagementPage() {
           <option value="inactive" className="bg-[#131315]">离线</option>
           <option value="idle" className="bg-[#131315]">闲置30天以上</option>
         </select>
-        <div className="flex items-center gap-4 text-label-md text-on-surface-variant ml-auto">
+        <div className="flex items-center gap-3 text-label-md text-on-surface-variant ml-auto">
+          <Button variant="outline" size="sm" onClick={() => {
+            const data = filtered.map(i => ({
+              IP: i.ip,
+              主机名: i.hostname ?? "",
+              部门: i.department ?? "",
+              负责人: i.owner ?? "",
+              "CPU(%)": i.cpu_avg != null ? i.cpu_avg.toFixed(1) : "",
+              "内存(%)": i.mem_avg != null ? i.mem_avg.toFixed(1) : "",
+              闲置天数: i.idle_days >= 0 ? i.idle_days : "",
+              状态: i.status === "active" ? "在线" : "离线"
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            ws["!cols"] = [{wch:16},{wch:16},{wch:12},{wch:12},{wch:10},{wch:10},{wch:10},{wch:8}];
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "设备清单");
+            XLSX.writeFile(wb, "device-list.xlsx");
+          }}>导出 Excel</Button>
+          <Button variant="outline" size="sm" onClick={() => {
+            const csv = "IP,主机名,部门,负责人,CPU(%),内存(%),闲置天数,状态\n" + filtered.map(i => `${i.ip},${i.hostname ?? ""},${i.department ?? ""},${i.owner ?? ""},${i.cpu_avg ?? ""},${i.mem_avg ?? ""},${i.idle_days ?? ""},${i.status}`).join("\n");
+            const blob = new Blob(["\uFEFF" + csv], {type: "text/csv;charset=utf-8"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = "device-list.csv"; a.click();
+            URL.revokeObjectURL(url);
+          }}>导出 CSV</Button>
           <span className="tabular-nums">共 {filtered.length} 台</span>
           <span className="tabular-nums text-primary">{onlineCount} 在线</span>
         </div>
@@ -92,6 +119,8 @@ export function DeviceManagementPage() {
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">状态</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">主机名</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">IP</th>
+                  <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">CPU / 内存</th>
+                  <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">闲置天数</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">部门</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">负责人</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">操作系统</th>
@@ -108,6 +137,12 @@ export function DeviceManagementPage() {
                     </td>
                     <td className="px-4 py-3 font-medium text-center text-base">{item.hostname ?? "--"}</td>
                     <td className="px-4 py-3 font-mono tabular-nums text-center text-lg"><button onClick={() => navigate(`/host/${item.ip}`)} className="hover:text-[#4D8EFF] hover:scale-110 transition-all duration-200 cursor-pointer inline-block">{item.ip}</button></td>
+                    <td className="px-4 py-3 text-on-surface-variant text-center text-base">
+                      {item.cpu_avg != null ? item.cpu_avg.toFixed(1) + "%" : "--"} / {item.mem_avg != null ? item.mem_avg.toFixed(1) + "%" : "--"}
+                    </td>
+                    <td className="px-4 py-3 text-on-surface-variant text-center text-base">
+                      {item.idle_days >= 0 ? item.idle_days + " 天" : "--"}
+                    </td>
                     <td className="px-4 py-3 text-on-surface-variant text-center text-base">{item.department ?? "--"}</td>
                     <td className="px-4 py-3 text-on-surface-variant text-center text-base">{item.owner ?? "--"}</td>
                     <td className="px-4 py-3 text-on-surface-variant text-center text-base">{item.os_type ?? "--"}</td>
@@ -132,8 +167,8 @@ export function DeviceManagementPage() {
       )}
 
       {/* Edit Modal */}
-      {editItem && (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center" onClick={() => setEditItem(null)}>
+      {editItem && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center" onClick={() => setEditItem(null)}>
           <div className="bg-surface border border-outline-variant rounded-lg p-6 w-full max-w-md micro-border shadow-2xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-headline-md mb-1">编辑主机信息</h3>
             <p className="text-label-md text-on-surface-variant mb-4">{editItem.ip} ({editItem.hostname})</p>
@@ -190,7 +225,8 @@ export function DeviceManagementPage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
