@@ -1,0 +1,37 @@
+--- a/frontend/src/components/layout/AppShell.tsx
++++ b/frontend/src/components/layout/AppShell.tsx
+@@ -332,10 +332,12 @@
+                   <a href="/dashboard" className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-white/[0.06] transition-colors">
+                     <span className="material-symbols-outlined text-2xl text-primary">dashboard</span>
+                     <span className="text-xs text-on-surface-variant">仪表盘</span>
+                   </a>
+-                  <a href="/devices" className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-white/[0.06] transition-colors">
+-                    <span className="material-symbols-outlined text-2xl text-primary">router</span>
+-                    <span className="text-xs text-on-surface-variant">设备管理</span>
+-                  </a>
++                  {isAdmin() && (
++                    <a href="/devices" className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-white/[0.06] transition-colors">
++                      <span className="material-symbols-outlined text-2xl text-primary">router</span>
++                      <span className="text-xs text-on-surface-variant">设备管理</span>
++                    </a>
++                  )}
+                   <a href="/alerts" className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-white/[0.06] transition-colors">
+                     <span className="material-symbols-outlined text-2xl text-error">notifications_active</span>
+                     <span className="text-xs text-on-surface-variant">告警中心</span>
+@@ -344,10 +346,12 @@
+                     <span className="material-symbols-outlined text-2xl text-primary">analytics</span>
+                     <span className="text-xs text-on-surface-variant">日志分析</span>
+                   </a>
+-                  <a href="/settings" className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-white/[0.06] transition-colors">
+-                    <span className="material-symbols-outlined text-2xl text-primary">settings</span>
+-                    <span className="text-xs text-on-surface-variant">系统设置</span>
+-                  </a>
++                  {isAdmin() && (
++                    <a href="/settings" className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-white/[0.06] transition-colors">
++                      <span className="material-symbols-outlined text-2xl text-primary">settings</span>
++                      <span className="text-xs text-on-surface-variant">系统设置</span>
++                    </a>
++                  )}
+                   <a href="/profile" className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-white/[0.06] transition-colors">
+                     <span className="material-symbols-outlined text-2xl text-primary">person</span>
+                     <span className="text-xs text-on-surface-variant">个人中心</span>

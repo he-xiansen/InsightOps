@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +9,14 @@ import { toBeijingTime } from "@/lib/utils";
 const PAGE_SIZE = 15;
 
 export function DeviceManagementPage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<VmAssetPerfItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [editItem, setEditItem] = useState<VmAssetPerfItem | null>(null);
+  const [editForm, setEditForm] = useState({ department: "", owner: "", phone: "", mobile: "", os_type: "" });
+  const [saving, setSaving] = useState(false);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -34,6 +39,12 @@ export function DeviceManagementPage() {
     if (statusFilter === "active") list = list.filter(i => i.status === "active");
     else if (statusFilter === "inactive") list = list.filter(i => i.status !== "active");
     else if (statusFilter === "idle") list = list.filter(i => i.idle_days >= 30);
+    // 在线的主机排在前面
+    list = [...list].sort((a, b) => {
+      if (a.status === "active" && b.status !== "active") return -1;
+      if (a.status !== "active" && b.status === "active") return 1;
+      return (a.hostname ?? a.ip).localeCompare(b.hostname ?? b.ip);
+    });
     return list;
   }, [items, search, statusFilter]);
 
@@ -76,34 +87,34 @@ export function DeviceManagementPage() {
         <>
           <div className="overflow-x-auto">
             <table className="w-full text-center">
-              <thead className="bg-primary/[0.06] border-b border-primary/10">
+              <thead className="bg-primary/[0.08] border-b-2 border-primary/20">
                 <tr>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">状态</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">主机名</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">IP</th>
+                  <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">部门</th>
                   <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">负责人</th>
-                  <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">电话</th>
-                  <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">闲置天数</th>
+                  <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">操作系统</th>
+                  <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">座机</th>
+                  <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">手机</th>
+                  <th className="px-4 py-3 text-label-md text-on-surface-variant font-semibold tracking-wider uppercase text-[10px]">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.04] min-h-[555px]">
+              <tbody className="divide-y divide-white/[0.08] min-h-[555px]">
                 {paged.map((item) => (
-                  <tr key={item.ip} className="hover:bg-primary/[0.03] transition-all duration-200 border-l-2 border-l-transparent hover:border-l-primary/30">
+                  <tr key={item.ip} className="hover:bg-primary/[0.05] transition-all duration-200 border-l-2 border-l-transparent hover:border-l-primary/40 odd:bg-white/[0.02]">
                     <td className="px-4 py-3">
                       <span className={`inline-block w-2.5 h-2.5 rounded-full ${item.status === "active" ? "bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.6)]" : "bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.4)]"}`} />
                     </td>
-                    <td className="px-4 py-3 font-medium text-center">{item.hostname ?? "--"}</td>
-                    <td className="px-4 py-3 font-mono tabular-nums text-center">{item.ip}</td>
-                    <td className="px-4 py-3 text-on-surface-variant text-center">{item.owner ?? "--"}</td>
-                    <td className="px-4 py-3 text-on-surface-variant text-center">{item.phone ?? "--"}</td>
-                    <td className="px-4 py-3">
-                      {item.idle_days >= 0 ? (
-                        <span className={`tabular-nums ${item.idle_days >= 60 ? "text-error" : item.idle_days >= 30 ? "text-tertiary" : ""}`}>
-                          {item.idle_days} 天
-                        </span>
-                      ) : (
-                        <span className="text-on-surface-variant">--</span>
-                      )}
+                    <td className="px-4 py-3 font-medium text-center text-base">{item.hostname ?? "--"}</td>
+                    <td className="px-4 py-3 font-mono tabular-nums text-center text-lg"><button onClick={() => navigate(`/host/${item.ip}`)} className="hover:text-[#4D8EFF] hover:scale-110 transition-all duration-200 cursor-pointer inline-block">{item.ip}</button></td>
+                    <td className="px-4 py-3 text-on-surface-variant text-center text-base">{item.department ?? "--"}</td>
+                    <td className="px-4 py-3 text-on-surface-variant text-center text-base">{item.owner ?? "--"}</td>
+                    <td className="px-4 py-3 text-on-surface-variant text-center text-base">{item.os_type ?? "--"}</td>
+                    <td className="px-4 py-3 text-on-surface-variant text-center text-base">{item.phone ?? "--"}</td>
+                    <td className="px-4 py-3 text-on-surface-variant text-center text-base">{item.mobile ?? "--"}</td>
+                    <td className="px-4 py-3 text-center">
+                      <button className="text-sm px-2 py-1 rounded text-white hover:scale-110 transition-all duration-200" style={{backgroundColor:"#4D8EFF",borderColor:"#4D8EFF"}} onClick={() => { setEditItem(item); setEditForm({ department: item.department ?? "", owner: item.owner ?? "", phone: item.phone ?? "", mobile: item.mobile ?? "", os_type: item.os_type ?? "" }); }}>修改</button>
                     </td>
                   </tr>
                 ))}
@@ -118,6 +129,68 @@ export function DeviceManagementPage() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Edit Modal */}
+      {editItem && (
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center" onClick={() => setEditItem(null)}>
+          <div className="bg-surface border border-outline-variant rounded-lg p-6 w-full max-w-md micro-border shadow-2xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-headline-md mb-1">编辑主机信息</h3>
+            <p className="text-label-md text-on-surface-variant mb-4">{editItem.ip} ({editItem.hostname})</p>
+            <div className="space-y-3">
+              {[
+                { label: "部门", key: "department" },
+                { label: "负责人", key: "owner" },
+                { label: "座机", key: "phone" },
+                { label: "手机", key: "mobile" },
+                { label: "操作系统", key: "os_type" },
+              ].map(field => (
+                <div key={field.key}>
+                  <label className="block text-label-md text-on-surface-variant mb-1">{field.label}</label>
+                  <input
+                    value={(editForm as any)[field.key]}
+                    onChange={e => setEditForm(f => ({ ...f, [field.key]: e.target.value }))}
+                    className="w-full h-9 px-3 rounded border border-white/10 bg-transparent text-sm text-on-surface-variant focus:outline-none focus:border-primary/50"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setEditItem(null)} className="text-xs h-8 px-4 rounded border border-white/10 text-on-surface-variant hover:border-white/30 transition-all">取消</button>
+              <button
+                onClick={async () => {
+                  setSaving(true);
+                  try {
+                    const body: any = {};
+                    for (const key of ["department","owner","phone","mobile","os_type"]) {
+                      if ((editForm as any)[key] !== (editItem as any)[key]) body[key] = (editForm as any)[key];
+                    }
+                    if (Object.keys(body).length > 0) {
+                      await fetch(`/api/assets/${editItem.ip}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body),
+                      });
+                      // Refresh list
+                      const res = await fetch("/api/assets/perf");
+                      const data = await res.json();
+                      setItems(data.items as VmAssetPerfItem[]);
+                    }
+                    setEditItem(null);
+                  } catch (e: any) {
+                    alert("保存失败: " + e.message);
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                disabled={saving}
+                className="text-xs h-8 px-4 rounded bg-primary text-primary-foreground hover:opacity-90 transition-all disabled:opacity-50"
+              >
+                {saving ? "保存中..." : "保存"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

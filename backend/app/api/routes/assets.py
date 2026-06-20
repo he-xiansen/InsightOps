@@ -10,9 +10,42 @@ from app.schemas.vm_asset import (
     VMAssetPerfListResponse,
 )
 from app.services.vm_asset_service import VMAssetService
+from pydantic import BaseModel
+from typing import Optional
+
+
+class UpdateAssetRequest(BaseModel):
+    hostname: Optional[str] = None
+    department: Optional[str] = None
+    owner: Optional[str] = None
+    phone: Optional[str] = None
+    mobile: Optional[str] = None
+    os_type: Optional[str] = None
+
+
+class UpdateAssetResponse(BaseModel):
+    ip: str
+    hostname: str | None = None
+    department: str | None = None
+    owner: str | None = None
+    phone: str | None = None
+    mobile: str | None = None
+    os_type: str | None = None
+    status: str
 
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
+
+
+@router.put("/{ip}", response_model=UpdateAssetResponse)
+def update_asset(
+    ip: str,
+    payload: UpdateAssetRequest,
+    session: Session = Depends(get_session),
+) -> UpdateAssetResponse:
+    """更新指定主机的基本信息"""
+    service = VMAssetService(session)
+    return service.update_asset(ip, payload)
 
 
 @router.get("", response_model=VMAssetListResponse)

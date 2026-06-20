@@ -46,7 +46,7 @@ if not exist "%PS1_SOURCE%" (
     pause
     exit /b 1
 )
-powershell -Command "(Get-Content '%PS1_SOURCE%') -replace '__API_URL__', '%API_URL%' | Set-Content '%PS1_TARGET%' -Encoding utf8"
+copy /Y "%PS1_SOURCE%" "%PS1_TARGET%" >nul
 if not exist "%PS1_TARGET%" (
     echo [FAIL] Script deployment failed
     pause
@@ -59,7 +59,7 @@ echo [4/5] Creating scheduled task - every 5 min...
 schtasks /Create /F /TN "%TASK_NAME%" ^
     /SC MINUTE /MO 5 ^
     /RU SYSTEM ^
-    /TR "powershell -NoProfile -File \"%PS1_TARGET%\"" ^
+    /TR "cmd /c set INSIGHTOPS_API_URL=%API_URL% && powershell -NoProfile -File \"%PS1_TARGET%\"" ^
     /RL HIGHEST >nul 2>&1
 
 if %errorLevel% neq 0 (
@@ -72,6 +72,7 @@ echo [OK]
 :: ---- 5. Test run ----
 echo [5/5] Running test...
 echo.
+set INSIGHTOPS_API_URL=%API_URL%
 powershell -NoProfile -File "%PS1_TARGET%"
 set TEST_EXIT=%errorLevel%
 echo.

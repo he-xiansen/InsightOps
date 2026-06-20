@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+from app.core.settings import CN_TZ
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
@@ -15,7 +16,7 @@ def run_idle_analysis(
     as_of: datetime | None = None,
     idle_days_threshold: int = DEFAULT_IDLE_DAYS,
 ) -> int:
-    effective_as_of = as_of or datetime.now(UTC)
+    effective_as_of = as_of or datetime.now(CN_TZ)
     service = IdleAnalysisService(session)
     return service.analyze_idle_assets(
         as_of=effective_as_of,

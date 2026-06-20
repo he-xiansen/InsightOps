@@ -1,5 +1,6 @@
 """数据清理任务：定期清理过期数据"""
-from datetime import UTC, datetime, timedelta
+from app.core.settings import CN_TZ
+from datetime import datetime, timedelta
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -21,7 +22,7 @@ def run_data_cleanup(
     sync_job_days: int = DEFAULT_SYNC_JOB_RETENTION_DAYS,
 ) -> dict[str, int]:
     """清理过期数据，返回各表删除条数"""
-    now = datetime.now(UTC)
+    now = datetime.now(CN_TZ)
     results = {}
 
     # 清理 perf_metrics

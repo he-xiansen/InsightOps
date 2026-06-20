@@ -1,4 +1,5 @@
-from datetime import UTC, datetime
+from app.core.settings import CN_TZ
+from datetime import datetime
 
 from sqlalchemy import Engine, text
 

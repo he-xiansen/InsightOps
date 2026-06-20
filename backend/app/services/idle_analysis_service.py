@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from app.core.settings import CN_TZ
+from datetime import datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -21,18 +22,18 @@ class IdleLevel:
     recycle_level: str
 
 
-def ensure_utc(value: datetime) -> datetime:
+def ensure_cn(value: datetime) -> datetime:
     if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
+        return value.replace(tzinfo=CN_TZ)
+    return value.astimezone(CN_TZ)
 
 
 def classify_idle_days(last_login_at: datetime, now: datetime) -> IdleLevel:
-    idle_days = max((ensure_utc(now) - ensure_utc(last_login_at)).days, 0)
+    idle_days = max((ensure_cn(now) - ensure_cn(last_login_at)).days, 0)
 
-    if idle_days >= 90:
+    if idle_days >= 60:
         recycle_level = "high"
-    elif idle_days >= 60:
+    elif idle_days >= 30:
         recycle_level = "medium"
     else:
         recycle_level = "low"
@@ -46,7 +47,7 @@ class IdleAnalysisService:
         self.repository = IdleVMSnapshotRepository(session)
 
     def analyze_idle_assets(self, *, as_of: datetime, idle_days_threshold: int) -> int:
-        started_at = datetime.now(UTC)
+        started_at = datetime.now(CN_TZ)
         snapshot_rows: list[dict[str, object]] = []
         assets = self.session.scalars(select(VMAsset).order_by(VMAsset.ip)).all()
         previous_snapshots = self.repository.get_latest_before_date_by_ips(
@@ -73,7 +74,7 @@ class IdleAnalysisService:
             SyncJob(
                 job_type=IDLE_ANALYSIS_JOB_NAME,
                 started_at=started_at,
-                finished_at=datetime.now(UTC),
+                finished_at=datetime.now(CN_TZ),
                 status="success",
                 processed_count=processed_count,
             )

@@ -61,6 +61,7 @@ export type AdviceItem = {
   rating: string;
   summary: string;
   details: string[];
+  score?: number;
 };
 
 export type AdviceResponse = {
@@ -116,6 +117,12 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers,
   });
+  if (response.status === 401) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
   if (!response.ok) {
     throw new Error(`Request failed: ${response.status}`);
   }
@@ -169,6 +176,10 @@ export async function updateSettings(settings: Record<string, string>): Promise<
     method: "PUT",
     body: JSON.stringify({ settings }),
   });
+}
+
+export async function getLLMApiKey(): Promise<{ api_key: string }> {
+  return apiFetch<{ api_key: string }>("/api/v1/settings/llm-api-key");
 }
 
 export async function getAiAdvice(hosts: any[]): Promise<AdviceResponse> {

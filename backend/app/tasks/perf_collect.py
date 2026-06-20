@@ -1,11 +1,13 @@
 """定时从 Zabbix trends 表采集 CPU/内存数据到本地 perf_metrics 表"""
-from datetime import UTC, datetime
+from app.core.settings import CN_TZ
+from datetime import datetime
 
 from sqlalchemy import Engine, text
 from sqlalchemy.orm import Session
 
 from app.models.perf_metric import PerfMetric
 from app.models.sync_job import SyncJob
+from app.models.vm_asset import VMAsset
 from app.repositories.zabbix_host_mapping_repository import ZabbixHostMappingRepository
 
 
@@ -53,9 +55,9 @@ def _ip_matches_filter(ip: str, prefixes: list[str] | None) -> bool:
 
 
 def run_perf_collect(session: Session, zabbix_engine: Engine, ip_filter: str | None = None) -> int:
-    started_at = datetime.now(UTC)
+    started_at = datetime.now(CN_TZ)
     ip_prefixes = _parse_ip_filter(ip_filter)
-    now = datetime.now(UTC)
+    now = datetime.now(CN_TZ)
 
     # 1. 获取所有 Zabbix 主机映射
     mapping_repo = ZabbixHostMappingRepository(session)
@@ -131,12 +133,23 @@ def run_perf_collect(session: Session, zabbix_engine: Engine, ip_filter: str | N
                     collected_at=rec["collected_at"],
                 ))
                 inserted += 1
+                # 更新该主机的最后在线时间
+                asset = session.get(VMAsset, rec["ip"])
+                if asset is not None:
+                    last_seen = asset.last_seen_at
+                    if last_seen is not None and last_seen.tzinfo is None:
+                        last_seen = last_seen.replace(tzinfo=CN_TZ)
+                    collected_at = rec["collected_at"]
+                    if collected_at.tzinfo is None:
+                        collected_at = collected_at.replace(tzinfo=CN_TZ)
+                    if last_seen is None or last_seen < collected_at:
+                        asset.last_seen_at = collected_at
 
         # 7. 记录同步日志
         session.add(SyncJob(
             job_type=JOB_NAME,
             started_at=started_at,
-            finished_at=datetime.now(UTC),
+            finished_at=datetime.now(CN_TZ),
             status="success",
             processed_count=inserted,
         ))

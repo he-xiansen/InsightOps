@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ReactEChartsCore from "echarts-for-react/lib/core";
 import * as echarts from "echarts/core";
 import { LineChart, PieChart } from "echarts/charts";
@@ -49,11 +50,13 @@ type VmItem = {
 
 /* ─── Dashboard Data Hook ─── */
 function useDashboard() {
+  const navigate = useNavigate();
   const [vmTotal, setVmTotal] = useState(0);
   const [idleTotal, setIdleTotal] = useState(0);
   const [todayRdp, setTodayRdp] = useState(0);
   const [healthOk, setHealthOk] = useState(true);
   const [alerts, setAlerts] = useState<IdleItem[]>([]);
+  const [idleLevelCounts, setIdleLevelCounts] = useState({ high: 0, medium: 0 });
   const [devices, setDevices] = useState<VmItem[]>([]);
   const [perfItems, setPerfItems] = useState<VmAssetPerfItem[]>([]);
   const [series, setSeries] = useState<{ bucket: string; login_count: number }[]>([]);
@@ -81,12 +84,12 @@ function useDashboard() {
         setDevices(a.items as VmItem[]);
         const highAlerts = (i.items as IdleItem[]).filter((x) => x.recycle_level === "high");
         const medAlerts = (i.items as IdleItem[]).filter((x) => x.recycle_level === "medium");
+        setIdleLevelCounts({ high: highAlerts.length, medium: medAlerts.length });
         setAlerts([...highAlerts, ...medAlerts].slice(0, 5));
-        setTodayRdp(
-          t.data.series.length > 0
-            ? t.data.series[t.data.series.length - 1].login_count
-            : 0,
-        );
+        // 今日RDP从专用API获取
+        fetch("/api/v1/rdp/today").then(r => r.json()).then(d => {
+          if (!cancelled) setTodayRdp(d.count);
+        }).catch(() => {});
         setSeries(t.data.series);
       } finally {
         if (!cancelled) setLoading(false);
@@ -119,6 +122,7 @@ function useDashboard() {
     setGranularity(g);
     const t = await getRdpTrends(g);
     setSeries(t.data.series);
+    setChartKey(k => k + 1);
   };
 
   const loadAdvice = useCallback(async () => {
@@ -127,7 +131,7 @@ function useDashboard() {
     try {
       const sorted = [...perfItems].sort((a, b) => (b.idle_days ?? 0) - (a.idle_days ?? 0));
       const result = await getAiAdvice(
-        sorted.slice(0, 10).map(item => ({
+        sorted.slice(0, 5).map(item => ({
           ip: item.ip,
           hostname: item.hostname,
           idle_days: item.idle_days,
@@ -145,15 +149,23 @@ function useDashboard() {
     }
   }, [perfItems, adviceLoading]);
 
-  const DEVICE_PAGE_SIZE = 20;
+  const DEVICE_PAGE_SIZE = 15;
   const deviceFiltered = useMemo(() => {
     const q = deviceSearch.trim().toLowerCase();
-    if (!q) return perfItems;
-    return perfItems.filter(item =>
-      item.ip.toLowerCase().includes(q) ||
-      (item.hostname ?? "").toLowerCase().includes(q) ||
-      (item.owner ?? "").toLowerCase().includes(q)
-    );
+    let list = q
+      ? perfItems.filter(item =>
+          item.ip.toLowerCase().includes(q) ||
+          (item.hostname ?? "").toLowerCase().includes(q) ||
+          (item.owner ?? "").toLowerCase().includes(q)
+        )
+      : [...perfItems];
+    // 在线的主机排在前面
+    list.sort((a, b) => {
+      if (a.status === "active" && b.status !== "active") return -1;
+      if (a.status !== "active" && b.status === "active") return 1;
+      return (a.hostname ?? a.ip).localeCompare(b.hostname ?? b.ip);
+    });
+    return list;
   }, [perfItems, deviceSearch]);
 
   const deviceTotalPages = Math.max(1, Math.ceil(deviceFiltered.length / DEVICE_PAGE_SIZE));
@@ -167,7 +179,7 @@ function useDashboard() {
     if (action === "next") setDevicePage(p => Math.min(deviceTotalPages, p + 1));
   };
 
-  return { vmTotal, idleTotal, todayRdp, healthOk, alerts, devices, perfItems, series, granularity, loading, advice, adviceLoading, perfOverview, perfLoading, loadTrends, loadAdvice, deviceSearch, setDeviceSearch, deviceFiltered, devicePage, deviceTotalPages, devicePaged, setDevicePage: handleDevicePage };
+  return { vmTotal, idleTotal, todayRdp, healthOk, alerts, idleLevelCounts, devices, perfItems, series, granularity, loading, advice, adviceLoading, perfOverview, perfLoading, loadTrends, loadAdvice, deviceSearch, setDeviceSearch, deviceFiltered, devicePage, deviceTotalPages, devicePaged, setDevicePage: handleDevicePage, navigate };
 }
 
 /* ─── KPI Card ─── */
@@ -203,31 +215,46 @@ export function OverviewPage() {
     { value: "month" as const, label: "月" },
   ];
 
-  // 闲置等级分布
-  const idleLevels = d.alerts.reduce(
-    (acc, item) => {
-      if (item.recycle_level === "high") acc.high++;
-      else if (item.recycle_level === "medium") acc.medium++;
-      return acc;
-    },
-    { high: 0, medium: 0 },
-  );
+  // 闲置等级分布（使用完整统计数据）
+  const idleLevels = { high: d.idleLevelCounts?.high ?? 0, medium: d.idleLevelCounts?.medium ?? 0 };
   const lowCount = d.vmTotal - d.idleTotal;
 
   const idlePieOption = {
-    tooltip: { trigger: "item" as const, backgroundColor: "#201f22", borderColor: "hsla(217,32%,60%,0.08)" },
-    legend: { bottom: 0, textStyle: { color: "#c2c6d6" } },
+    tooltip: {
+      trigger: "item" as const,
+      backgroundColor: "#201f22",
+      borderColor: "hsla(217,32%,60%,0.08)",
+      textStyle: { color: "#e5e1e4" },
+      formatter: "{b}: {c} 台 ({d}%)",
+    },
+    legend: { bottom: 0, textStyle: { color: "#c2c6d6" }, icon: "circle", itemWidth: 8 },
     series: [{
       type: "pie",
-      radius: ["45%", "70%"],
-      center: ["50%", "45%"],
+      roseType: "area",
+      radius: ["20%", "75%"],
+      center: ["50%", "42%"],
       avoidLabelOverlap: true,
-      itemStyle: { borderRadius: 4, borderColor: "#09090b", borderWidth: 2 },
-      label: { show: false },
+      itemStyle: {
+        borderRadius: 6,
+        borderColor: "#09090b",
+        borderWidth: 2,
+      },
+      label: {
+        show: true,
+        formatter: "{b}\n{d}%",
+        fontSize: 11,
+        fontWeight: "bold",
+        color: "#e5e1e4",
+        lineHeight: 16,
+      },
+      emphasis: {
+        itemStyle: { shadowBlur: 12, shadowColor: "rgba(0,0,0,0.4)" },
+        label: { fontSize: 13, fontWeight: "bold" },
+      },
       data: [
         { value: lowCount, name: "正常", itemStyle: { color: "#adc6ff" } },
         { value: idleLevels.medium, name: "低优先级闲置", itemStyle: { color: "#ffb786" } },
-        { value: idleLevels.high, name: "高优先级闲置", itemStyle: { color: "#ffb4ab" } },
+        { value: idleLevels.high, name: "高优先级闲置", itemStyle: { color: "#f0a050" } },
       ],
     }],
   };
@@ -244,12 +271,30 @@ export function OverviewPage() {
     xAxis: {
       type: "category",
       data: d.series.map(s => {
-        const d2 = s.bucket.substring(5);
-        return d2;
+        const b = s.bucket;
+        if (b.includes("/")) {
+          // 周格式 "6/8-6/14" → "6/8-14"
+          const [start, end] = b.split("-");
+          const startMonth = start.split("/")[0];
+          const endMonth = end.split("/")[0];
+          if (startMonth === endMonth) {
+            return start + "-" + end.split("/")[1];
+          }
+          return b;
+        }
+        // 日格式 "2026-06-20" → "06-20"
+        return b.substring(5);
       }),
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { color: "#c2c6d6", fontSize: 11 },
+      axisLabel: {
+        color: "#c2c6d6",
+        fontSize: 11,
+        rotate: d.granularity === "week" ? 25 : d.granularity === "day" ? 30 : 0,
+        interval: d.granularity === "week" ? Math.max(0, Math.floor(d.series.length / 12))
+          : d.granularity === "day" ? Math.max(0, Math.floor(d.series.length / 14))
+          : 0,
+      },
     },
     yAxis: {
       type: "value",
@@ -292,8 +337,8 @@ export function OverviewPage() {
               {GRANULARITY_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
-                  onClick={() => { d.loadTrends(opt.value); setChartKey(k => k + 1); }}
-                  className={`text-xs h-7 px-3 rounded transition-all ${
+                  onClick={() => { d.loadTrends(opt.value); }}
+                  className={`text-sm h-7 px-3 rounded transition-all ${
                     d.granularity === opt.value
                       ? "bg-primary text-primary-foreground font-medium shadow-sm"
                       : "bg-transparent border border-white/10 text-on-surface-variant hover:border-white/30"
@@ -319,7 +364,10 @@ export function OverviewPage() {
 
         {/* Idle Distribution Pie */}
         <div className="glass-panel micro-border rounded p-5 transition-all duration-300 hover:border-primary/20">
-          <h2 className="text-headline-md mb-2">闲置等级分布</h2>
+          <h2 className="text-headline-md mb-2 flex items-baseline gap-2 flex-wrap">
+            <span>闲置等级分布</span>
+            <span className="text-[11px] leading-tight text-on-surface-variant/45 font-normal">基于 RDP 闲置天数：high ≥60天，medium ≥30天</span>
+          </h2>
           <ReactEChartsCore
             echarts={echarts}
             option={idlePieOption}
@@ -336,6 +384,7 @@ export function OverviewPage() {
           <h2 className="text-headline-md mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-primary text-xl">monitoring</span>
             CPU & 内存使用分布
+            <span className="text-[11px] leading-tight text-on-surface-variant/45 font-normal ml-1">CPU: ≥60%高 / 30-60%中 / &lt;30%低 &nbsp; 内存: ≥70%高 / 40-70%中 / &lt;40%低</span>
           </h2>
           {(() => {
             const hosts = d.perfOverview.filter((h: any) => h.cpu != null || h.mem != null);
@@ -349,7 +398,7 @@ export function OverviewPage() {
             return <>
               <div className="grid grid-cols-2 gap-4 mb-3">
                 <div>
-                  <p className="text-xs text-on-surface-variant mb-1">CPU 使用率</p>
+                  <p className="text-sm text-on-surface-variant mb-1">CPU 使用率</p>
                   <ReactEChartsCore
                     echarts={echarts}
                     option={{
@@ -357,7 +406,7 @@ export function OverviewPage() {
                       series: [{
                         type: "pie", radius: ["30%", "70%"], center: ["50%", "50%"], label: { show: true, formatter: function(p: any) { return p.name.split(" ")[0] + "\n" + p.value; }, fontSize: 11, fontWeight: "bold", color: "#e5e1e4", lineHeight: 16 },
                         data: [
-                          { value: cpuHigh, name: "高占用 (>=60%)", itemStyle: { color: "#ffb4ab" } },
+                          { value: cpuHigh, name: "高占用 (>=60%)", itemStyle: { color: "#f0a050" } },
                           { value: cpuMid, name: "中等 (30-60%)", itemStyle: { color: "#ffb786" } },
                           { value: cpuLow, name: "低占用 (<30%)", itemStyle: { color: "#adc6ff" } },
                         ],
@@ -368,7 +417,7 @@ export function OverviewPage() {
                   />
                 </div>
                 <div>
-                  <p className="text-xs text-on-surface-variant mb-1">内存使用率</p>
+                  <p className="text-sm text-on-surface-variant mb-1">内存使用率</p>
                   <ReactEChartsCore
                     echarts={echarts}
                     option={{
@@ -376,7 +425,7 @@ export function OverviewPage() {
                       series: [{
                         type: "pie", radius: ["30%", "70%"], center: ["50%", "50%"], label: { show: true, formatter: function(p: any) { return p.name.split(" ")[0] + "\n" + p.value; }, fontSize: 11, fontWeight: "bold", color: "#e5e1e4", lineHeight: 16 },
                         data: [
-                          { value: memHigh, name: "高占用 (>=70%)", itemStyle: { color: "#ffb4ab" } },
+                          { value: memHigh, name: "高占用 (>=70%)", itemStyle: { color: "#f0a050" } },
                           { value: memMid, name: "中等 (40-70%)", itemStyle: { color: "#ffb786" } },
                           { value: memLow, name: "低占用 (<40%)", itemStyle: { color: "#adc6ff" } },
                         ],
@@ -396,9 +445,10 @@ export function OverviewPage() {
           <h2 className="text-headline-md mb-4 flex items-center gap-2">
             <span className="material-symbols-outlined text-tertiary text-xl">sort</span>
             主机使用率排行
+            <span className="text-[11px] leading-tight text-on-surface-variant/45 font-normal ml-1">按 内存60%·CPU40% 加权降序</span>
           </h2>
           {(() => {
-            const hosts = [...d.perfOverview].filter((h: any) => h.cpu != null || h.mem != null).reverse();
+            const hosts = [...d.perfOverview].filter((h: any) => h.cpu != null || h.mem != null).sort((a: any, b: any) => ((b.mem ?? 0) * 0.6 + (b.cpu ?? 0) * 0.4) - ((a.mem ?? 0) * 0.6 + (a.cpu ?? 0) * 0.4));
             if (hosts.length === 0) return <div className="h-48 flex items-center justify-center text-sm text-on-surface-variant">{d.perfLoading ? "加载中..." : "暂无可监控的主机数据"}</div>;
             return (
               <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
@@ -407,17 +457,17 @@ export function OverviewPage() {
                     <span className="w-24 font-mono text-on-surface-variant truncate shrink-0">{h.ip}</span>
                     <div className="flex-1 flex flex-col gap-0.5 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="w-7 text-right tabular-nums text-xs text-primary shrink-0">CPU</span>
+                        <span className="w-7 text-right tabular-nums text-sm text-primary shrink-0">CPU</span>
                         <span className="w-8 text-right tabular-nums text-primary shrink-0">{(h.cpu ?? 0).toFixed(0)}%</span>
                         <div className="flex-1 h-4 bg-gray-800 rounded-sm" style={{ position: "relative" }}>
                           <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: Math.min(h.cpu ?? 0, 100) + "%", backgroundColor: "#adc6ff", borderRadius: "2px", transition: "width 0.3s" }} />
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="w-7 text-right tabular-nums text-xs text-error shrink-0">MEM</span>
+                        <span className="w-7 text-right tabular-nums text-sm text-error shrink-0">MEM</span>
                         <span className="w-8 text-right tabular-nums text-error shrink-0">{(h.mem ?? 0).toFixed(0)}%</span>
                         <div className="flex-1 h-4 bg-gray-800 rounded-sm" style={{ position: "relative" }}>
-                          <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: Math.min(h.mem ?? 0, 100) + "%", backgroundColor: "#ffb4ab", borderRadius: "2px", transition: "width 0.3s" }} />
+                          <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: Math.min(h.mem ?? 0, 100) + "%", backgroundColor: "#f0a050", borderRadius: "2px", transition: "width 0.3s" }} />
                         </div>
                       </div>
                     </div>
@@ -470,7 +520,7 @@ export function OverviewPage() {
               <span className="material-symbols-outlined text-tertiary">auto_awesome</span>
               AI 回收建议
             </h3>
-            <Button variant="outline" size="sm" className="text-xs h-7" onClick={d.loadAdvice} disabled={d.adviceLoading}>
+            <Button variant="outline" size="sm" className="text-sm h-7" onClick={d.loadAdvice} disabled={d.adviceLoading}>
               <span className="material-symbols-outlined text-sm mr-1">refresh</span>
               {d.adviceLoading ? "分析中..." : "分析"}
             </Button>
@@ -480,7 +530,7 @@ export function OverviewPage() {
               <div className="p-6 text-center text-sm text-on-surface-variant">
                 <p>点击"分析"按钮，AI 将基于闲置数据</p>
                 <p className="mt-1">为当前主机生成回收建议</p>
-                <p className="mt-3 text-xs opacity-60">需要先在系统设置中配置 LLM API Key</p>
+                <p className="mt-3 text-sm opacity-60">需要先在系统设置中配置 LLM API Key</p>
               </div>
             ) : (
               d.advice.map((item) => (
@@ -497,9 +547,17 @@ export function OverviewPage() {
                       {item.rating === "high" ? "建议回收" : item.rating === "medium" ? "建议关注" : "正常"}
                     </span>
                   </div>
-                  <p className="text-sm text-on-surface-variant mb-1">{item.summary}</p>
+                  <p className="text-sm text-on-surface-variant mb-1">
+                    {item.summary}
+                    {item.score !== undefined && (
+                      <span className="ml-2 text-xs font-mono text-primary">[{item.score}/100]</span>
+                    )}
+                  </p>
+                  {item.ai_text && (
+                    <p className="text-sm text-on-surface mt-2 leading-relaxed px-3 py-2 bg-white/[0.04] rounded-lg border border-white/[0.06]">{item.ai_text}</p>
+                  )}
                   {item.details.length > 0 && (
-                    <ul className="text-xs text-on-surface-variant/70 space-y-0.5 ml-4 list-disc">
+                    <ul className="text-sm text-on-surface-variant/70 space-y-0.5 ml-4 list-disc mt-2">
                       {item.details.map((d, i) => <li key={i}>{d}</li>)}
                     </ul>
                   )}
@@ -524,7 +582,7 @@ export function OverviewPage() {
             onChange={(e) => d.setDeviceSearch(e.target.value)}
             className="ml-auto max-w-xs h-9 px-3 rounded-lg border border-white/[0.08] bg-white/[0.03] text-sm text-on-surface-variant placeholder:text-on-surface-variant/30 focus:outline-none focus:border-primary/50 focus:bg-white/[0.06] transition-all duration-200"
           />
-          <span className="text-label-md text-on-surface-variant tabular-nums">{d.deviceFiltered.length} 台 / {d.devices.length} 在线</span>
+          <span className="text-label-md text-on-surface-variant tabular-nums">{d.deviceFiltered.length} 台 / {d.devices.filter((dev) => dev.status === "active").length} 在线</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-center">
@@ -544,13 +602,13 @@ export function OverviewPage() {
                   <td className="px-4 py-3">
                     <span className={`inline-block w-2.5 h-2.5 rounded-full ${dev.status === "active" ? "bg-green-400 animate-pulse shadow-[0_0_8px_rgba(74,222,128,0.6)]" : "bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.4)]"}`} />
                   </td>
-                  <td className="px-4 py-3 font-medium text-center">{dev.hostname ?? "--"}</td>
-                  <td className="px-4 py-3 font-mono tabular-nums text-center">{dev.ip}</td>
-                  <td className="px-4 py-3 text-on-surface-variant text-center">{dev.owner ?? "--"}</td>
-                  <td className="px-4 py-3 text-on-surface-variant text-center">{dev.phone ?? "--"}</td>
+                  <td className="px-4 py-3 font-medium text-center text-base">{dev.hostname ?? "--"}</td>
+                  <td className="px-4 py-3 font-mono tabular-nums text-center text-lg"><button onClick={() => d.navigate(`/host/${dev.ip}`)} className="underline decoration-dotted underline-offset-2 hover:text-[#4D8EFF] hover:scale-110 transition-all duration-200 cursor-pointer inline-block">{dev.ip}</button></td>
+                  <td className="px-4 py-3 text-on-surface-variant text-center text-base">{dev.owner ?? "--"}</td>
+                  <td className="px-4 py-3 text-center"><div className="text-on-surface-variant text-base">{dev.phone ?? "--"}</div><div className="text-on-surface-variant/50 text-base">{dev.mobile ?? "--"}</div></td>
                   <td className="px-4 py-3">
                     {dev.idle_days >= 0 ? (
-                      <span className={`tabular-nums ${dev.idle_days >= 60 ? "text-error" : dev.idle_days >= 30 ? "text-tertiary" : ""}`}>
+                      <span className={`tabular-nums ${dev.idle_days >= 60 ? "text-error" : dev.idle_days >= 30 ? "text-tertiary" : "text-primary"}`}>
                         {dev.idle_days} 天
                       </span>
                     ) : (
@@ -566,13 +624,13 @@ export function OverviewPage() {
           <span>第 {d.devicePage}/{d.deviceTotalPages} 页</span>
           <div className="flex gap-2">
             <button
-              className="text-xs h-7 px-3 rounded border border-white/10 text-on-surface-variant hover:border-white/30 disabled:opacity-30 transition-all"
+              className="text-sm h-7 px-3 rounded border border-white/10 text-on-surface-variant hover:border-white/30 disabled:opacity-30 transition-all"
               disabled={d.devicePage <= 1}
               onClick={d.setDevicePage}
               data-action="prev"
             >上一页</button>
             <button
-              className="text-xs h-7 px-3 rounded border border-white/10 text-on-surface-variant hover:border-white/30 disabled:opacity-30 transition-all"
+              className="text-sm h-7 px-3 rounded border border-white/10 text-on-surface-variant hover:border-white/30 disabled:opacity-30 transition-all"
               disabled={d.devicePage >= d.deviceTotalPages}
               onClick={d.setDevicePage}
               data-action="next"

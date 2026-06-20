@@ -20,6 +20,15 @@ class SystemSettingsService:
                 result[key] = all_settings.get(key, "")
         return result
 
+
+    def get_all_raw(self) -> dict:
+        """返回所有设置原始值"""
+        return self.repository.get_all()
+
+    def get_llm_api_key(self) -> str:
+        """返回真实的 LLM API Key（非掩码）"""
+        return self.repository.get("llm_api_key").value if self.repository.get("llm_api_key") else ""
+
     def update_settings(self, settings: dict) -> dict:
         for key, value in settings.items():
             if key in self.repository.get_allowed_keys():

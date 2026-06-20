@@ -13,12 +13,13 @@ RUN python -m pip install --upgrade pip && \
         sqlalchemy==2.0.36 \
         pydantic-settings==2.5.2 \
         pymysql==1.1.1 \
-        cryptography==43.0.1
+        cryptography==43.0.1 \
+        python-multipart==0.0.12
 
 RUN useradd --create-home --uid 10001 insightops
 
 COPY backend/ ./
-RUN chown -R insightops:insightops /app/backend
+RUN chown -R insightops:insightops /app/backend &&     mkdir -p /app/backend/uploads &&     chown insightops:insightops /app/backend/uploads
 
 USER insightops
 

@@ -1,3 +1,4 @@
+from app.models.user import User
 from app.models.api_key import APIKey
 from app.models.idle_vm_snapshot import IdleVMSnapshot
 from app.models.sync_job import SyncJob
@@ -8,6 +9,7 @@ from app.models.perf_metric import PerfMetric
 from app.models.zabbix_host_mapping import ZabbixHostMapping
 
 __all__ = [
+    "User",
     "APIKey",
     "IdleVMSnapshot",
     "SyncJob",

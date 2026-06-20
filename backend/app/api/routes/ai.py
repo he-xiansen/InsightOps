@@ -18,6 +18,8 @@ class AdviceItem(BaseModel):
     rating: str
     summary: str
     details: list[str]
+    score: int | None = None
+    ai_text: str | None = None
 
 
 class AdviceResponse(BaseModel):

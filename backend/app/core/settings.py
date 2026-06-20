@@ -102,3 +102,7 @@ def load_settings(settings_type: type[SettingsT], *, scope: str) -> SettingsT:
             }
         )
         raise MissingSettingsError(scope=scope, fields=missing_fields) from exc
+
+from datetime import timezone, timedelta
+
+CN_TZ = timezone(timedelta(hours=8), "Asia/Shanghai")

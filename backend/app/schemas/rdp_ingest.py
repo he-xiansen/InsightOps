@@ -13,6 +13,7 @@ class RdpIngestEvent(BaseModel):
 
 class RdpIngestRequest(BaseModel):
     events: list[RdpIngestEvent] = Field(default_factory=list)
+    source_ip: str | None = None  # 客户端自身 IP，用于更新在线状态
 
 
 class RdpIngestResponse(BaseModel):

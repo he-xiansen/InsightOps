@@ -1,14 +1,17 @@
+from datetime import date, datetime
+
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.database import get_session
+from app.models.vm_rdp_login import VMRdpLogin
 from app.schemas.rdp_ingest import RdpIngestRequest, RdpIngestResponse
 from app.schemas.rdp_login import RdpLoginListResponse
 from app.schemas.rdp_trend import RDPTrendResponse, TrendGranularity
 from app.services.rdp_ingest_service import RDPIngestService
 from app.services.rdp_login_service import RdpLoginService
 from app.services.rdp_trend_service import RDPTrendService
-
 
 router = APIRouter(prefix="/api/v1/rdp", tags=["rdp"])
 
@@ -38,5 +41,23 @@ def ingest_rdp_events(
     session: Session = Depends(get_session),
 ) -> RdpIngestResponse:
     service = RDPIngestService(session)
-    result = service.ingest_events([e.model_dump() for e in payload.events])
+    result = service.ingest_events(
+        [e.model_dump() for e in payload.events],
+        source_ip=payload.source_ip,
+    )
     return RdpIngestResponse(**result)
+
+
+class TodayRdpResponse(BaseModel):
+    count: int
+
+
+@router.get("/today", response_model=TodayRdpResponse)
+def get_today_rdp(session: Session = Depends(get_session)):
+    from app.core.settings import CN_TZ
+    from sqlalchemy import func
+    today = datetime.now(CN_TZ).date()
+    cnt = session.query(func.count(VMRdpLogin.id)).filter(
+        func.date(VMRdpLogin.login_at) == today
+    ).scalar()
+    return TodayRdpResponse(count=cnt or 0)

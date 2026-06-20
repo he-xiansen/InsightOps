@@ -10,6 +10,11 @@ SYSTEM_SETTINGS_KEYS = {
     "idle_analysis_interval",
     "perf_retention_days",
     "rdp_retention_days",
+    # Zabbix 数据库连接
+    "zabbix_db_host",
+    "zabbix_db_port",
+    "zabbix_db_user",
+    "zabbix_db_name",
 }
 
 

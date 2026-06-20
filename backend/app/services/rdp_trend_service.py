@@ -1,4 +1,5 @@
-from datetime import UTC, date, datetime
+from app.core.settings import CN_TZ
+from datetime import date, datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -7,10 +8,10 @@ from app.models.vm_rdp_login import VMRdpLogin
 from app.schemas.rdp_trend import RDPTrendPoint, RDPTrendResponse, RDPTrendResponseData, TrendGranularity
 
 
-def ensure_utc(value: datetime) -> datetime:
+def ensure_cn(value: datetime) -> datetime:
     if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
+        return value.replace(tzinfo=CN_TZ)
+    return value.astimezone(CN_TZ)
 
 
 class RDPTrendService:
@@ -24,7 +25,7 @@ class RDPTrendService:
             select(VMRdpLogin.login_at).order_by(VMRdpLogin.login_at)
         ).all()
         for login_at in login_times:
-            bucket_key = self._build_bucket_key(ensure_utc(login_at), granularity)
+            bucket_key = self._build_bucket_key(ensure_cn(login_at), granularity)
             bucket_counts[bucket_key] = bucket_counts.get(bucket_key, 0) + 1
 
         series = [
@@ -34,6 +35,12 @@ class RDPTrendService:
             )
             for bucket_key in sorted(bucket_counts)
         ]
+
+        # 如果最新桶不是今天，补上今天（数值为 0）
+        if series and granularity == "day":
+            today_str = datetime.now(CN_TZ).date().isoformat()
+            if series[-1].bucket != today_str:
+                series.append(RDPTrendPoint(bucket=today_str, login_count=0))
 
         return RDPTrendResponse(
             code=0,
@@ -61,8 +68,12 @@ class RDPTrendService:
             return date(year, month, day).isoformat()
 
         if granularity == "week":
+            from datetime import timedelta
             year, week = bucket_key
-            return f"{year}-W{week:02d}"
+            # ISO 周第一天是周一
+            d = date.fromisocalendar(year, week, 1)
+            end = d + timedelta(days=6)
+            return f"{d.month}/{d.day}-{end.month}/{end.day}"
 
         year, month = bucket_key
         return f"{year}-{month:02d}"
