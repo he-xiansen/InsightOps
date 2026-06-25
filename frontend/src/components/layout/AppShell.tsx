@@ -68,6 +68,8 @@ function Clock() {
 }
 
 function isAdmin() {
+  const token = localStorage.getItem("token");
+  if (!token) return false;
   return localStorage.getItem("is_admin") === "true";
 }
 

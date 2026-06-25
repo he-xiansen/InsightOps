@@ -1,8 +1,6 @@
 services:
   insightops:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.app
+    image: deploy-insightops-app:latest
     restart: unless-stopped
     depends_on:
       insightops-mysql:

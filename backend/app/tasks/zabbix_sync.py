@@ -49,5 +49,5 @@ def _sync_os_info(session: Session, zabbix_engine: Engine, rows: list[dict]) -> 
             updates.append({"ip": ip, "os_type": os_type})
 
     if updates:
-        asset_repo.upsert_many(updates)
+        asset_repo.upsert_many(updates, skip_deleted=True)
         session.commit()

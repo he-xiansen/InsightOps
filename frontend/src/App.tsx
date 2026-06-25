@@ -24,8 +24,9 @@ function isAuthenticated() {
 }
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem("token");
   const isAdmin = localStorage.getItem("is_admin") === "true";
-  if (!isAdmin) return <Navigate to="/dashboard" replace />;
+  if (!token || !isAdmin) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 

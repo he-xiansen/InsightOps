@@ -11,3 +11,4 @@ backend/.venv/
 backend/__pycache__/
 frontend/dist/
 frontend/node_modules/
+insightops-images.tar\ninsightops-files.tar.gz\noffline-install.sh

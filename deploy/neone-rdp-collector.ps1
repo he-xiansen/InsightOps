@@ -90,8 +90,8 @@ try {
         Write-Host "[InsightOps] OK: received=$($r.received_count) inserted=$($r.inserted_count)"
     }
 } catch {
-    Write-Error "[InsightOps] FAIL: $_"
-    exit 1
+    Write-Host "[InsightOps] WARN: $_"
+    exit 0
 }
 
 if ($events) {

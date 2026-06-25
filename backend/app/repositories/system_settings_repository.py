@@ -15,6 +15,7 @@ SYSTEM_SETTINGS_KEYS = {
     "zabbix_db_port",
     "zabbix_db_user",
     "zabbix_db_name",
+    "zabbix_db_password",
 }
 
 

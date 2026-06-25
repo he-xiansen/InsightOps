@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
 # 简单的 Token 存储（内存中，重启后需重新登录）
 _tokens: dict[str, dict] = {}
-TOKEN_EXPIRE_HOURS = 24
+TOKEN_EXPIRE_HOURS = 168
 
 
 def _hash_password(password: str) -> str:
@@ -85,7 +85,7 @@ def register(
         username=payload.username.strip(),
         email=payload.email.strip(),
         password_hash=_hash_password(payload.password),
-        is_admin=False,
+        is_admin=session.query(User).count() == 0,
     )
     session.add(user)
     session.commit()

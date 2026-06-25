@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 :: ========================================
 :: CONFIG - edit the URL below
 :: ========================================
-set API_URL=http://172.27.39.32:8000
+set API_URL=http://172.27.39.32:8081
 set PS1_SOURCE=%~dp0neone-rdp-collector.ps1
 set PS1_TARGET=%ProgramData%\InsightOps\rdp-collector.ps1
 set TASK_NAME=InsightOps-RDP-Collector
@@ -95,7 +95,7 @@ if %TEST_EXIT% equ 0 (
     echo   Task has been created. Will retry every 5 min.
     echo   Check:
     echo     1. Is %API_URL% reachable?
-    echo        Test-NetConnection 172.27.39.32 -Port 8000
+    echo        Test-NetConnection 172.27.39.32 -Port 8081
     echo     2. Are there RDP events in Security Log?
     echo        Get-WinEvent -FilterHashtable @{LogName='Security';Id=4624} -MaxEvents 3
 )

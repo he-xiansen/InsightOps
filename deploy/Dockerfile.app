@@ -1,6 +1,17 @@
+# ===== Stage 1: Build Frontend =====
+FROM node:20-alpine AS frontend-build
+
+WORKDIR /app/frontend
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/ ./
+RUN npm run build
+
+# ===== Stage 2: Application =====
 FROM python:3.11-slim
 
-# Set timezone to Asia/Shanghai
 ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -20,10 +31,12 @@ RUN python -m pip install --upgrade pip && \
         cryptography==43.0.1 \
         python-multipart==0.0.12
 
-RUN useradd --create-home --uid 10001 insightops
-
 COPY backend/ ./
-RUN chown -R insightops:insightops /app/backend &&     mkdir -p /app/backend/uploads &&     chown insightops:insightops /app/backend/uploads
+COPY --from=frontend-build /app/frontend/dist /app/frontend
+
+RUN useradd --create-home --uid 10001 insightops && \
+    mkdir -p /app/backend/uploads && \
+    chown -R insightops:insightops /app
 
 USER insightops
 

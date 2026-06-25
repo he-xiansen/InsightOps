@@ -43,8 +43,11 @@ class ZabbixTestResponse(BaseModel):
     message: str
 
 
+class ZabbixTestRequest(BaseModel):
+    password: str = ""
+
 @router.post("/test-zabbix", response_model=ZabbixTestResponse)
-def test_zabbix_connection(session: Session = Depends(get_session)):
+def test_zabbix_connection(payload: ZabbixTestRequest = ZabbixTestRequest(), session: Session = Depends(get_session)):
     """测试 Zabbix 数据库连接"""
     import os
     from urllib.parse import quote_plus
@@ -57,8 +60,8 @@ def test_zabbix_connection(session: Session = Depends(get_session)):
     port = settings.get("zabbix_db_port", "3306")
     user = settings.get("zabbix_db_user", "")
     dbname = settings.get("zabbix_db_name", "zabbix")
-    # 密码从环境变量读
-    password = os.environ.get("zabbix_db_password", "")
+    # 密码：前端传的优先，否则从环境变量读
+    password = payload.password or os.environ.get("zabbix_db_password", "")
 
     if not host or not user:
         return {"ok": False, "message": "Zabbix 主机地址或用户未配置"}

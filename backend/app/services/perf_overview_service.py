@@ -11,19 +11,24 @@ class PerfOverviewService:
         self.session = session
 
     def get_overview(self) -> dict:
-        """从本地 perf_metrics 表获取所有主机的最新性能数据"""
-        # 取最近一次采集时间
-        latest_time = self.session.query(
-            func.max(PerfMetric.collected_at)
-        ).scalar()
+        """从本地 perf_metrics 表获取每台主机最新的性能数据"""
+        from sqlalchemy import desc
 
-        if latest_time is None:
-            return {"hosts": []}
+        # 子查询：每台主机最新的 collected_at
+        subq = (
+            self.session.query(
+                PerfMetric.ip,
+                func.max(PerfMetric.collected_at).label("max_time")
+            )
+            .group_by(PerfMetric.ip)
+            .subquery()
+        )
 
-        # 查该时间点的所有主机数据
-        records = self.session.query(PerfMetric).filter(
-            PerfMetric.collected_at == latest_time
-        ).all()
+        records = (
+            self.session.query(PerfMetric)
+            .join(subq, (PerfMetric.ip == subq.c.ip) & (PerfMetric.collected_at == subq.c.max_time))
+            .all()
+        )
 
         hosts = [
             {"ip": r.ip, "cpu": r.cpu_avg, "mem": r.mem_avg}

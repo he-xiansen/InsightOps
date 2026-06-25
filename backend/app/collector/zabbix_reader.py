@@ -30,6 +30,59 @@ LIMIT 1
 """
 
 
+
+# 按 IP 或 IP 段查询主机
+HOST_BY_IP_SQL = """
+SELECT h.hostid, h.host, i.ip, i.available
+FROM hosts AS h
+JOIN interface AS i ON i.hostid = h.hostid
+WHERE h.status IN (0, 1)
+  AND ({where})
+ORDER BY h.hostid ASC, i.ip ASC
+"""
+
+def fetch_hosts_by_ips(engine: Engine, ip_list: list[str]) -> list[dict[str, object]]:
+    """按 IP 列表查询 Zabbix 主机（支持精确 IP、IP 前缀、IP 范围）"""
+    import re
+    conditions = []
+    params = {}
+    
+    for idx, ip in enumerate(ip_list):
+        ip = ip.strip()
+        if not ip:
+            continue
+        
+        # IP 范围：172.27.32.30-60
+        range_match = re.match(r'^(\d+\.\d+\.\d+)\.(\d+)-(\d+)$', ip)
+        if range_match:
+            prefix = range_match.group(1)
+            start = int(range_match.group(2))
+            end = int(range_match.group(3))
+            # 生成多个精确 IP 条件
+            for octet in range(start, end + 1):
+                pkey = f"ip{idx}_{octet}"
+                conditions.append(f"i.ip = :{pkey}")
+                params[pkey] = f"{prefix}.{octet}"
+            continue
+        
+        # IP 前缀（如 "10.0.1." 或 "172.27.32."）
+        if ip.endswith("."):
+            conditions.append(f"i.ip LIKE :ip{idx}")
+            params[f"ip{idx}"] = ip + "%"
+        elif re.match(r"^\d+\.\d+\.\d+\.\d+$", ip):
+            conditions.append(f"i.ip = :ip{idx}")
+            params[f"ip{idx}"] = ip
+        else:
+            conditions.append(f"i.ip LIKE :ip{idx}")
+            params[f"ip{idx}"] = "%" + ip + "%"
+    
+    if not conditions:
+        return []
+    
+    sql = HOST_BY_IP_SQL.replace("{where}", " OR ".join(conditions))
+    with engine.connect() as connection:
+        result = connection.execute(text(sql), params)
+        return [dict(row) for row in result.mappings()]
 def fetch_host_rows(engine: Engine) -> list[dict[str, object]]:
     with engine.connect() as connection:
         result = connection.execute(text(HOST_SYNC_SQL))

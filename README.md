@@ -1,217 +1,92 @@
 # InsightOps — 基础设施运维监控平台
 
-InsightOps 是一个面向 IT 基础设施的运维监控平台，集成 **Zabbix 性能数据采集**、**Windows RDP 登录审计**、**闲置资源回收分析** 和 **AI 辅助决策** 等功能，帮助运维团队实时掌握资产状态，发现并回收闲置资源。
+集成 Zabbix 性能数据、RDP 登录审计、闲置资源回收分析和 AI 辅助决策的运维监控平台。
 
-## 功能特性
+## 功能
 
-- **仪表盘总览** — 虚机总数、闲置资源、RDP 登录趋势、系统状态一目了然
-- **设备管理** — 主机资产清单管理，支持搜索、筛选、分页
-- **RDP 登录审计** — 采集 Windows 远程桌面登录事件，追踪闲置天数
-- **性能监控** — 从 Zabbix 数据库同步 CPU / 内存数据，支持趋势图、分布饼图、使用率排行
-- **闲置资源分析** — 自动计算闲置等级（高 / 中 / 低），支持 AI 生成回收建议
-- **告警中心** — 闲置超期告警，按等级归类展示
-- **系统设置** — LLM API Key / Endpoint / Model 配置，Zabbix 采集 IP 段过滤
+- **仪表盘** — 主机总数、闲置分布、CPU/内存排行、RDP 登录趋势
+- **设备管理** — 主机资产清单，支持搜索、筛选、导入导出
+- **性能监控** — 从 Zabbix 同步 CPU/内存数据
+- **闲置分析** — 自动计算闲置等级，AI 生成回收建议
+- **告警中心** — 闲置超期告警
+- **系统设置** — LLM 配置、Zabbix 数据库连接、采集间隔
+- **日志分析** — RDP 登录日志查询
 
 ## 技术栈
 
 | 层 | 技术 |
 |---|---|
 | 前端 | React 18 + TypeScript + Vite + Tailwind CSS + ECharts |
-| 后端 | Python 3.11 + FastAPI + SQLAlchemy 2.0 + Pydantic |
+| 后端 | Python 3.11 + FastAPI + SQLAlchemy 2.0 |
 | 数据库 | MySQL 8.0 |
-| 监控源 | Zabbix 6 (trends 表) |
-| 部署 | Docker Compose |
+| 监控源 | Zabbix 6（从 trends 表读 CPU/内存） |
 
 ## 项目结构
 
 ```
 InsightOps/
-├── backend/                  # FastAPI 后端
-│   └── app/
-│       ├── api/routes/       # API 路由
-│       ├── bootstrap/        # 数据库初始化
-│       ├── collector/        # Zabbix 采集逻辑
-│       ├── core/             # 配置、数据库连接、安全
-│       ├── models/           # SQLAlchemy 模型
-│       ├── repositories/     # 数据仓储层
-│       ├── schemas/          # Pydantic 数据模型
-│       ├── services/         # 业务逻辑
-│       └── tasks/            # 定时任务（闲置分析、性能采集）
-├── frontend/                 # React 前端
-│   └── src/
-│       ├── lib/              # API 封装、工具函数
-│       └── pages/            # 页面组件
-├── deploy/                   # 部署文件
-│   ├── docker-compose.yml    # 主 Docker Compose
-│   ├── Dockerfile.api        # 后端镜像
-│   ├── Dockerfile.frontend   # 前端镜像
-│   ├── Dockerfile.collector  # 采集器镜像
+├── backend/app/
+│   ├── api/routes/       # API 路由
+│   ├── bootstrap/        # 数据库初始化
+│   ├── core/             # 配置、数据库连接
+│   ├── models/           # SQLAlchemy 模型
+│   ├── services/         # 业务逻辑
+│   └── tasks/            # 定时任务（闲置分析、采集）
+├── frontend/src/
+│   ├── lib/              # API 封装
+│   └── pages/            # 页面组件
+├── deploy/
+│   ├── Dockerfile.app              # 整合镜像
+│   ├── docker-compose.offline.yml  # 离线部署（含外部网络）
+│   ├── docker-compose.standalone.yml # 离线部署（无外部网络）
 │   ├── setup_rdp_collector.bat     # Windows RDP 采集安装脚本
 │   └── neone-rdp-collector.ps1     # RDP 采集 PowerShell 脚本
-└── zabbix6/                  # Zabbix Docker 部署（可选）
-    └── docker-compose.yml
+└── docs/
+    └── deploy/offline-deploy.md    # 离线部署手册
 ```
 
-## 快速部署
+## 部署
 
-### 前置条件
-
-- Docker + Docker Compose
-- Zabbix 6 数据库（可选，不配置则无法使用性能监控功能）
-
-### 1. 克隆仓库
-
-```bash
-git clone https://github.com/he-xiansen/InsightOps.git
-cd InsightOps
-```
-
-### 2. 配置环境变量
-
-```bash
-# 后端 API 端口（默认 8000）
-export API_PORT=8000
-
-# 前端端口（默认 8080）
-export FRONTEND_PORT=8080
-
-# 项目数据库
-export PROJECT_DB_HOST=insightops-mysql
-export PROJECT_DB_USER=insightops
-export PROJECT_DB_PASSWORD=insightops
-export PROJECT_DB_NAME=insightops
-
-# Zabbix 数据库（如不配置则跳过性能采集）
-export ZABBIX_DB_HOST=zabbix-mysql
-export ZABBIX_DB_PORT=3306
-export ZABBIX_DB_USER=readonly
-export ZABBIX_DB_PASSWORD=readonly
-export ZABBIX_DB_NAME=zabbix
-```
-
-### 3. 启动服务
+### 在线环境
 
 ```bash
 cd deploy
-docker compose up -d
+# 编辑 .env.example → .env，配置 Zabbix 连接信息
+docker compose --env-file .env up -d
 ```
 
-首次启动会自动初始化数据库表结构。
+访问 `http://localhost:8080`。
 
-### 4. 访问
+### 离线环境
 
-- 前端页面: `http://localhost:8080`
-- API 文档: `http://localhost:8000/docs`
-
-### 5. 初始化数据
-
-启动后可通过 API 导入主机资产数据：
-
-```bash
-curl -X POST http://localhost:8000/api/assets/bulk-upsert \
-  -H "Content-Type: application/json" \
-  -d '{ "items": [ { "ip": "192.168.1.1", "hostname": "server-01", "owner": "张三", "department": "技术部" } ] }'
-```
+参见 `docs/deploy/offline-deploy.md`。
 
 ## Windows RDP 采集
 
-在需要审计远程桌面登录的 Windows 主机上执行：
+在 Windows 主机上：
 
-1. 将以下 **两个文件** 复制到 Windows 主机同一目录下：
-   - `deploy/setup_rdp_collector.bat`
-   - `deploy/neone-rdp-collector.ps1`
+1. 拷贝 `deploy/setup_rdp_collector.bat` 和 `deploy/neone-rdp-collector.ps1` 到同一目录
+2. 管理员身份运行 `setup_rdp_collector.bat`
+3. 输入 InsightOps API 地址
 
-2. **以管理员身份** 运行 `setup_rdp_collector.bat`
-
-```batch
-# 以管理员身份运行
-setup_rdp_collector.bat
-```
-
-脚本会自动将 `.ps1` 拷贝到 `%ProgramData%\InsightOps\` 并注册计划任务，每 5 分钟采集一次 RDP 登录事件上报至平台 API。
-
-## 采集任务
-
-collector 容器支持以下定时任务（通过 `COLLECTOR_TASK` 环境变量切换）：
-
-| 任务名 | 说明 | 默认间隔 |
-|---|---|---|
-| `idle_analysis` | 闲置资源分析 | 每 30 分钟 |
-| `perf_collect` | 从 Zabbix 同步 CPU/内存数据 | 每 10 分钟 |
-| `zabbix_host_sync` | 同步 Zabbix 主机映射 | 每 30 分钟 |
+每 5 分钟自动上报 RDP 登录事件和心跳。
 
 ## 系统设置
 
-在 Web 界面 `系统设置` 页面可以配置：
+在 Web 界面配置：
 
-- **LLM API Key / Endpoint / Model** — 用于 AI 回收建议功能
-- **性能采集 IP 段过滤** — 限定从 Zabbix 采集哪些 IP 段的数据
+- LLM API Key / Endpoint / Model — AI 回收建议
+- Zabbix 数据库连接 — 性能数据采集
+- 采集间隔 — 闲置分析、性能采集、主机同步频率
 
-## 主机信息同步接口
+## 环境变量
 
-用于从外部 CMDB 或工单系统向 InsightOps 批量同步主机信息（部门、负责人、联系方式等）。
-
-### 接口说明
-
-| 项目 | 值 |
-|------|-----|
-| 方法 | `POST` |
-| 路径 | `/api/v1/sync/vm-assets` |
-| 认证 | 请求头 `X-API-Key` |
-| Content-Type | `application/json` |
-
-### 固定 API Key
-
-内网部署时使用以下固定 Key，无需每次重新生成：
-
-```
-insightops-sync-2026
-```
-
-首次部署时执行以下命令写入数据库：
-
-```bash
-docker exec -i deploy-insightops-mysql-1 mysql -uroot -p"$MYSQL_ROOT_PASSWORD" insightops << "SQL"
-INSERT INTO api_keys (key_name, key_hash, enabled)
-VALUES ('sync-api-key', SHA2('insightops-sync-2026', 256), 1)
-ON DUPLICATE KEY UPDATE key_hash = SHA2('insightops-sync-2026', 256), enabled = 1;
-SQL
-```
-
-### 调用示例
-
-```bash
-curl -X POST 'http://<平台IP>:8080/api/v1/sync/vm-assets'   -H 'Content-Type: application/json'   -H 'X-API-Key: insightops-sync-2026'   -d '{
-    "items": [
-      {
-        "ip": "10.0.1.1",
-        "hostname": "web-server-01",
-        "department": "技术部",
-        "owner": "张三",
-        "phone": "010-88008801",
-        "mobile": "13800138001"
-      }
-    ]
-  }'
-```
-
-### 请求体字段说明
-
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `ip` | ✅ | 主机 IP，唯一标识 |
-| `hostname` | 可选 | 主机名 |
-| `department` | 可选 | 部门 |
-| `owner` | 可选 | 负责人 |
-| `phone` | 可选 | 座机号码 |
-| `mobile` | 可选 | 手机号码 |
-| `os_type` | 可选 | 操作系统类型 |
-| `status` | 可选 | 状态，默认 `active` |
-
-> 只传需要更新的字段即可，未传的字段保持原值不变。同一 `ip` 重复提交会覆盖已有字段。
-
-详细文档请参考 `docs/api/vm-sync-api.md`。
-
-## License
-
-MIT
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `APP_PORT` | `8080` | 对外端口 |
+| `PROJECT_DB_USER` | `insightops` | 业务库用户 |
+| `PROJECT_DB_PASSWORD` | `insightops` | 业务库密码 |
+| `PROJECT_DB_NAME` | `insightops` | 业务库名 |
+| `MYSQL_ROOT_PASSWORD` | `root` | MySQL root 密码 |
+| `ZABBIX_DB_HOST` | - | Zabbix 数据库 IP |
+| `ZABBIX_DB_PASSWORD` | - | Zabbix 数据库密码 |

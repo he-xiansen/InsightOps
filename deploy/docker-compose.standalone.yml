@@ -1,8 +1,6 @@
 services:
   insightops:
-    build:
-      context: ..
-      dockerfile: deploy/Dockerfile.app
+    image: deploy-insightops-app:latest
     restart: unless-stopped
     depends_on:
       insightops-mysql:
@@ -10,25 +8,20 @@ services:
     environment:
       app_name: ${APP_NAME:-InsightOps}
       app_env: ${APP_ENV:-prod}
-      project_db_host: ${PROJECT_DB_HOST:-insightops-mysql}
-      project_db_port: ${PROJECT_DB_PORT:-3306}
+      project_db_host: insightops-mysql
+      project_db_port: 3306
       project_db_user: ${PROJECT_DB_USER:-insightops}
       project_db_password: ${PROJECT_DB_PASSWORD:-insightops}
       project_db_name: ${PROJECT_DB_NAME:-insightops}
-      zabbix_db_host: ${ZABBIX_DB_HOST:-zabbix-mysql}
+      zabbix_db_host: ${ZABBIX_DB_HOST}
       zabbix_db_port: ${ZABBIX_DB_PORT:-3306}
       zabbix_db_user: ${ZABBIX_DB_USER:-readonly}
-      zabbix_db_password: ${ZABBIX_DB_PASSWORD:-readonly}
+      zabbix_db_password: ${ZABBIX_DB_PASSWORD}
       zabbix_db_name: ${ZABBIX_DB_NAME:-zabbix}
     volumes:
       - insightops-uploads-data:/app/backend/uploads
-      - ../backend/app:/app/backend/app
-      - ../backend/requirements.txt:/app/backend/requirements.txt
     ports:
-      - "${APP_PORT:-8081}:8000"
-    networks:
-      - default
-      - zabbix-net
+      - "${APP_PORT:-8080}:8000"
 
   insightops-mysql:
     image: mysql:8.0
@@ -50,8 +43,3 @@ services:
 volumes:
   insightops-mysql-data:
   insightops-uploads-data:
-
-networks:
-  zabbix-net:
-    external: true
-    name: zabbix6_zabbix6-net

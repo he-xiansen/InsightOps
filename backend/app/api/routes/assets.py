@@ -64,6 +64,19 @@ def bulk_upsert_assets(
     return service.bulk_upsert(payload)
 
 
+@router.delete("/{ip}")
+def delete_asset(ip: str, session: Session = Depends(get_session)):
+    """软删除指定主机（标记 deleted=1，Zabbix 同步不再加回）"""
+    from app.models.vm_asset import VMAsset
+    asset = session.query(VMAsset).filter(VMAsset.ip == ip).first()
+    if not asset:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail=f"Host {ip} not found")
+    asset.deleted = True
+    session.commit()
+    return {"deleted": ip}
+
+
 @router.get("/perf", response_model=VMAssetPerfListResponse)
 def list_assets_with_perf(
     session: Session = Depends(get_session),

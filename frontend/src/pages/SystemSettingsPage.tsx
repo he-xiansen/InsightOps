@@ -27,6 +27,8 @@ export function SystemSettingsPage() {
   const [zabbixPort, setZabbixPort] = useState("3306");
   const [zabbixUser, setZabbixUser] = useState("");
   const [zabbixDbName, setZabbixDbName] = useState("zabbix");
+  const [zabbixPassword, setZabbixPassword] = useState("");
+  const [showZabbixPwd, setShowZabbixPwd] = useState(false);
   const [zabbixTestResult, setZabbixTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [zabbixTesting, setZabbixTesting] = useState(false);
 
@@ -44,6 +46,7 @@ export function SystemSettingsPage() {
       if (s.zabbix_db_port) setZabbixPort(s.zabbix_db_port);
       if (s.zabbix_db_user) setZabbixUser(s.zabbix_db_user);
       if (s.zabbix_db_name) setZabbixDbName(s.zabbix_db_name);
+      if (s.zabbix_db_password) setZabbixPassword(s.zabbix_db_password);
 
       if (s.llm_api_key && s.llm_api_key !== "\u2022\u2022\u2022\u2022\u2022\u2022") {
         setApiKey(s.llm_api_key);
@@ -75,6 +78,7 @@ export function SystemSettingsPage() {
         zabbix_db_port: zabbixPort,
         zabbix_db_user: zabbixUser,
         zabbix_db_name: zabbixDbName,
+        zabbix_db_password: zabbixPassword,
       });
       setApiKeyDirty(false);
       setSaveResult("保存成功");
@@ -105,7 +109,11 @@ export function SystemSettingsPage() {
       const token = localStorage.getItem("token");
       const res = await fetch("/api/v1/settings/test-zabbix", {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({password: zabbixPassword}),
       }).then(r => r.json());
       setZabbixTestResult(res);
     } catch (e: any) {
@@ -120,9 +128,11 @@ export function SystemSettingsPage() {
   }
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="space-y-6">
+      {/* 三栏并排 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {/* 大模型配置 */}
-      <div className="glass-panel micro-border rounded p-6">
+      <div className="glass-panel micro-border rounded p-6 flex flex-col">
         <div className="flex items-center gap-3 mb-6">
           <span className="material-symbols-outlined text-primary text-2xl">psychology</span>
           <div>
@@ -148,7 +158,7 @@ export function SystemSettingsPage() {
             <label className="block text-label-md text-on-surface-variant mb-1">模型名称</label>
             <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="deepseek-chat" />
           </div>
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex items-center gap-3 pt-2 mt-auto">
             <Button onClick={handleSave} disabled={saving}>{saving ? "保存中..." : "保存配置"}</Button>
             <Button variant="outline" onClick={handleTest} disabled={testing}>{testing ? "测试中..." : "测试连接"}</Button>
             {saveResult && <span className={`text-sm ${saveResult.includes("成功") ? "text-primary" : "text-error"}`}>{saveResult}</span>}
@@ -165,12 +175,12 @@ export function SystemSettingsPage() {
       </div>
 
       {/* Zabbix 数据库连接 */}
-      <div className="glass-panel micro-border rounded p-6">
+      <div className="glass-panel micro-border rounded p-6 flex flex-col">
         <div className="flex items-center gap-3 mb-6">
           <span className="material-symbols-outlined text-tertiary text-2xl">storage</span>
           <div>
             <h2 className="text-headline-md">Zabbix 数据库连接</h2>
-            <p className="text-label-md text-on-surface-variant">配置 Zabbix 数据库连接信息，用于同步主机和性能数据。密码通过环境变量注入，不在页面显示。</p>
+            <p className="text-label-md text-on-surface-variant">配置 Zabbix 数据库连接信息，用于同步主机和性能数据。</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -190,8 +200,17 @@ export function SystemSettingsPage() {
             <label className="block text-label-md text-on-surface-variant mb-1">数据库名</label>
             <input type="text" value={zabbixDbName} onChange={(e) => setZabbixDbName(e.target.value)} className="w-full h-9 px-3 rounded border border-white/10 bg-transparent text-sm text-on-surface-variant focus:outline-none focus:border-primary/50" placeholder="zabbix" />
           </div>
+          <div>
+            <label className="block text-label-md text-on-surface-variant mb-1">密码</label>
+            <div className="relative">
+              <input type={showZabbixPwd ? "text" : "password"} value={zabbixPassword} onChange={(e) => setZabbixPassword(e.target.value)} className="w-full h-9 px-3 pr-10 rounded border border-white/10 bg-transparent text-sm text-on-surface-variant focus:outline-none focus:border-primary/50" placeholder="数据库密码" />
+              <button type="button" onClick={() => setShowZabbixPwd(!showZabbixPwd)} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-white/[0.06] transition-colors text-on-surface-variant/60 hover:text-on-surface-variant" title={showZabbixPwd ? "隐藏" : "显示"}>
+                <span className="material-symbols-outlined text-lg">{showZabbixPwd ? "visibility_off" : "visibility"}</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-3 pt-4">
+        <div className="flex items-center gap-3 pt-4 mt-auto">
           <Button onClick={handleSave} disabled={saving}>{saving ? "保存中..." : "保存配置"}</Button>
           <Button variant="outline" onClick={handleZabbixTest} disabled={zabbixTesting}>{zabbixTesting ? "测试中..." : "测试 Zabbix 连接"}</Button>
           {saveResult && <span className={`text-sm ${saveResult.includes("成功") ? "text-primary" : "text-error"}`}>{saveResult}</span>}
@@ -207,7 +226,7 @@ export function SystemSettingsPage() {
       </div>
 
       {/* 采集与数据保留 */}
-      <div className="glass-panel micro-border rounded p-6">
+      <div className="glass-panel micro-border rounded p-6 flex flex-col">
         <div className="flex items-center gap-3 mb-6">
           <span className="material-symbols-outlined text-tertiary text-2xl">schedule</span>
           <div>
@@ -237,11 +256,13 @@ export function SystemSettingsPage() {
             <p className="text-xs text-on-surface-variant/50 mt-1">超过此天数的 RDP 登录记录将被清理</p>
           </div>
         </div>
-        <div className="mt-6 flex items-center gap-3">
+        <div className="mt-auto pt-4 flex items-center gap-3">
           <Button onClick={handleSave} disabled={saving}>{saving ? "保存中..." : "保存采集配置"}</Button>
           {saveResult && <span className={`text-sm ${saveResult.includes("成功") ? "text-primary" : "text-error"}`}>{saveResult}</span>}
         </div>
       </div>
+
+      </div>{/* end grid */}
 
       {/* 使用说明 */}
       <div className="glass-panel micro-border rounded p-6">
